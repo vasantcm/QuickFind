@@ -2,7 +2,7 @@
     QuickFind (http://quickfind.sourceforge.net/)
     Cross-platform Java application for searching files in your Computer.
 
-    Copyright (c) 2010, 2012 Vasantkumar Mulage
+    Copyright (c) 2010, 2013 Vasantkumar Mulage
 
     All rights reserved.
 
@@ -54,6 +54,7 @@ public class PropertyPage {
     private volatile static int fileIteratorThreadAliveCount = 0;
     private volatile static boolean fileIteratorStopper = false;
     private volatile static boolean cacheIteratorStopper = false;
+    private static boolean isSystemStartUp = false;
 
     /*
      * File formats and File Names
@@ -90,8 +91,8 @@ public class PropertyPage {
     /*
      * Application Information
      */
-    public static final String COPY_RIGHT = "© 2012 Vasantkumar Mulage";
-    public static final String PRODUCT_VERSION = "<html>  <font size='4'>1.0.0.0</font> <font size='2'>BETA</font> </html>";
+    public static final String COPY_RIGHT = "© 2013 Vasantkumar Mulage";
+    public static final String PRODUCT_VERSION = "<html>  <font size='4'>1.0.1.2</font> <font size='2'>BETA</font> </html>";
     public static final String WEBSITE = "<html><a href=\\'http://quickfind.sf.net/'>http://quickfind.sf.net/</a></html>";
 
     public static Icon directoryIcon;
@@ -126,6 +127,20 @@ public class PropertyPage {
      */
     public static int get_SEARCH_RESULT_SET_LIMIT() {
         return SEARCH_RESULT_SET_LIMIT;
+    }
+
+    /**
+     * @return the isSystemStartUp
+     */
+    public static boolean isIsSystemStartUp() {
+        return isSystemStartUp;
+    }
+
+    /**
+     * @param aIsSystemStartUp the isSystemStartUp to set
+     */
+    public static void setIsSystemStartUp(boolean aIsSystemStartUp) {
+        isSystemStartUp = aIsSystemStartUp;
     }
 
     public PropertyPage() {

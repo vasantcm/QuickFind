@@ -2,7 +2,7 @@
     QuickFind (http://quickfind.sourceforge.net/)
     Cross-platform Java application for searching files in your Computer.
 
-    Copyright (c) 2010, 2012 Vasantkumar Mulage
+    Copyright (c) 2010, 2013 Vasantkumar Mulage
 
     All rights reserved.
 
@@ -114,7 +114,7 @@ public class QuickFindAbout extends javax.swing.JDialog {
         authorNameLabel.setText("Vasantkumar Mulage");
 
         productVersionValueLabel.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
-        productVersionValueLabel.setText("1.0.0.0 BETA");
+        productVersionValueLabel.setText("1.0.0.1 BETA");
 
         homePageLabel.setFont(new java.awt.Font("Tahoma", 1, 11));
         homePageLabel.setText("Home Page:");
@@ -138,7 +138,7 @@ public class QuickFindAbout extends javax.swing.JDialog {
 
         productLicenseEditorPane.setContentType("text/html");
         productLicenseEditorPane.setEditable(false);
-        productLicenseEditorPane.setText("<html>\r\n  <head>\r\n\r\n  </head>\r\n  <body>\r\n    <p>\n<font size='4'>\n\tQuickFind (<a href='http://quickfind.sourceforge.net/'>http://quickfind.sourceforge.net/</a>)<br>\n\tCross-platform Java application for searching files in your Computer.\n<br><br>\n\tCopyright (c) 2010, 2012 Vasantkumar Mulage\n<br><br>\n\tAll rights reserved.\n<br><br>\n\tRedistribution and use in source and binary forms, with or without modification,\n\tare permitted provided that the following conditions are met:\n<br><br>\n\t    * Redistributions of source code must retain the above copyright notice,\n\t      this list of conditions and the following disclaimer.<br>\n\t    * Redistributions in binary form must reproduce the above copyright notice,\n\t      this list of conditions and the following disclaimer in the documentation\n\t      and/or other materials provided with the distribution.<br>\n\t    * Neither the name of the QuickFind nor the names of its contributors\n\t      may be used to endorse or promote products derived from this software without\n\t      specific prior written permission.\n<br><br>\n\n\tTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS<br>\n\t\"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT<br>\n\tLIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR<br>\n\tA PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR<br>\n\tCONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,<br>\n\tEXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,<br>\n\tPROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR\n\tPROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF<br>\n\tLIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING<br>\n\tNEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS<br>\n\tSOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.<br>\n</font>\n</p>\n</body>\r\n</html>\r");
+        productLicenseEditorPane.setText("<html>\r\n  <head>\r\n\r\n  </head>\r\n  <body>\r\n    <p>\n<font size='4'>\n\tQuickFind (<a href='http://quickfind.sourceforge.net/'>http://quickfind.sourceforge.net/</a>)<br>\n\tCross-platform Java application for searching files in your Computer.\n<br><br>\n\tCopyright (c) 2010, 2013 Vasantkumar Mulage\n<br><br>\n\tAll rights reserved.\n<br><br>\n\tRedistribution and use in source and binary forms, with or without modification,\n\tare permitted provided that the following conditions are met:\n<br><br>\n\t    * Redistributions of source code must retain the above copyright notice,\n\t      this list of conditions and the following disclaimer.<br>\n\t    * Redistributions in binary form must reproduce the above copyright notice,\n\t      this list of conditions and the following disclaimer in the documentation\n\t      and/or other materials provided with the distribution.<br>\n\t    * Neither the name of the QuickFind nor the names of its contributors\n\t      may be used to endorse or promote products derived from this software without\n\t      specific prior written permission.\n<br><br>\n\n\tTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS<br>\n\t\"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT<br>\n\tLIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR<br>\n\tA PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR<br>\n\tCONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,<br>\n\tEXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,<br>\n\tPROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR\n\tPROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF<br>\n\tLIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING<br>\n\tNEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS<br>\n\tSOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.<br>\n</font>\n</p>\n</body>\r\n</html>\r");
         productLicenseEditorPane.setAutoscrolls(false);
         productLicenseScrollPane.setViewportView(productLicenseEditorPane);
 

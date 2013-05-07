@@ -2,7 +2,7 @@
     QuickFind (http://quickfind.sourceforge.net/)
     Cross-platform Java application for searching files in your Computer.
 
-    Copyright (c) 2010, 2012 Vasantkumar Mulage
+    Copyright (c) 2010, 2013 Vasantkumar Mulage
 
     All rights reserved.
 
@@ -54,6 +54,8 @@ import java.awt.TrayIcon;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -264,7 +266,7 @@ public class QuickFind extends javax.swing.JFrame {
             ActionListener exitActionListener = new ActionListener() {
 
                 public void actionPerformed(ActionEvent e) {
-                    System.out.println("Quick Find Exiting...");
+                    System.out.println("QuickFind Exiting...");
                     System.exit(0);
                 }
             };
@@ -272,7 +274,7 @@ public class QuickFind extends javax.swing.JFrame {
             ActionListener activeActionListener = new ActionListener() {
 
                 public void actionPerformed(ActionEvent e) {
-                    QFTrayIcon.displayMessage("Quick Find", "Quick Find is Active!", TrayIcon.MessageType.INFO);
+                    QFTrayIcon.displayMessage("QuickFind", "QuickFind is Active!", TrayIcon.MessageType.INFO);
                 }
             };
 
@@ -324,7 +326,7 @@ public class QuickFind extends javax.swing.JFrame {
             systemTrayPopUp.addSeparator();
             systemTrayPopUp.add(systemTrayExitMenuItem);
 
-            QFTrayIcon = new TrayIcon(systemTrayImage, "Quick Find", systemTrayPopUp);
+            QFTrayIcon = new TrayIcon(systemTrayImage, "QuickFind", systemTrayPopUp);
             QFTrayIcon.setImageAutoSize(true);
             QFTrayIcon.addActionListener(activeActionListener);
             QFTrayIcon.addMouseListener(mouseListener);
@@ -521,6 +523,26 @@ public class QuickFind extends javax.swing.JFrame {
         searchTextField = new javax.swing.JTextField((int) ((Toolkit.getDefaultToolkit().getScreenSize().getWidth() / 100) * 5));
         searchTextField.setFont(PropertyPage.DEFAULT_TEXT_FIELD_FONT);
         searchTextField.setToolTipText("Type Here");
+
+        /*
+         * Resize searchTextField width according to frame width
+         */
+        this.addComponentListener(new ComponentListener() {
+
+            public void componentResized(ComponentEvent e) {
+                searchTextField.setColumns( (int) (QuickFind.this.getBounds().getWidth() / 100) * 5);
+            }
+
+            public void componentMoved(ComponentEvent e) {
+            }
+
+            public void componentShown(ComponentEvent e) {
+            }
+
+            public void componentHidden(ComponentEvent e) {
+            }
+        });
+
 
         /*
          * Processes key input
@@ -793,6 +815,9 @@ public class QuickFind extends javax.swing.JFrame {
         qfTabbedPane.add("Advanced", advancedPanel);
         //qfTabbedPane.add("CacheManager", cacheManagerPanel);
         this.setContentPane(qfTabbedPane);
+        this.setLocationRelativeTo(this);
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        this.setBounds(0,0, screenSize.width/2 , screenSize.height/2);
         this.setExtendedState(this.getExtendedState() | JFrame.MAXIMIZED_BOTH);
         if (SystemTray.isSupported()) {
             this.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
@@ -816,7 +841,7 @@ public class QuickFind extends javax.swing.JFrame {
              * Reset file iterator control flag
              */
             PropertyPage.setFileIteratorStopper(false);
-            QFTrayIcon.displayMessage("Quick Find", "Caching Started!", TrayIcon.MessageType.INFO);
+            QFTrayIcon.displayMessage("QuickFind", "Caching Started!", TrayIcon.MessageType.INFO);
             quickFindButton.setEnabled(false);
             isSearchDisabled = true;
             isCaching = true;
@@ -850,7 +875,7 @@ public class QuickFind extends javax.swing.JFrame {
                         cacheButton.setText("Cache");
                         statusLabel.setText(PropertyPage.getCachedFilesCount() + " Items scanned in " + (Utility.getReadableElapsedIntervalInSeconds(System.currentTimeMillis() - cacheStartTime)) + " Secs");
                         QFTrayIcon.setImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource(PropertyPage.IMAGES_PATH + PropertyPage.SYSTEM_ICON)));
-                        QFTrayIcon.displayMessage("Quick Find", "Caching Over!", TrayIcon.MessageType.INFO);
+                        QFTrayIcon.displayMessage("QuickFind", "Caching Over!", TrayIcon.MessageType.INFO);
                     }
                 }
             });
@@ -862,7 +887,7 @@ public class QuickFind extends javax.swing.JFrame {
         } else if (scannerInstance != null) {   // caching process is already running so let stop it
             cacheButton.setEnabled(false);
             cacheButton.setText("Wait...");
-            QFTrayIcon.displayMessage("Quick Find", "Interupting Cache!", TrayIcon.MessageType.INFO);
+            QFTrayIcon.displayMessage("QuickFind", "Interupting Cache!", TrayIcon.MessageType.INFO);
 
             SwingWorker worker = new SwingWorker<Void, Void>() {
 
@@ -1345,6 +1370,8 @@ public class QuickFind extends javax.swing.JFrame {
         clearOldSearchResultset();
         setStatusMessage(PropertyPage.getSearchedFilesCount() + " Items found.");
         clearResultTable();
+        resultSetIndexLabel.setText("0-0");
+        searchTextField.setText("");
         nextRowsButton.setEnabled(false);
         previousRowsButton.setEnabled(false);
     }

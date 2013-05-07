@@ -2,7 +2,7 @@
     QuickFind (http://quickfind.sourceforge.net/)
     Cross-platform Java application for searching files in your Computer.
 
-    Copyright (c) 2010, 2012 Vasantkumar Mulage
+    Copyright (c) 2010, 2013 Vasantkumar Mulage
 
     All rights reserved.
 
@@ -98,7 +98,7 @@ public class QuickFindSplash extends javax.swing.JFrame {
         productNameLabel.setText("QuickFind");
 
         productVersionValueLabel.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
-        productVersionValueLabel.setText("<html> \n<font size='4'>1.0.0.0</font>\n<font size='2'>BETA</font>\n</html>");
+        productVersionValueLabel.setText("<html> \n<font size='4'>1.0.0.1</font>\n<font size='2'>BETA</font>\n</html>");
 
         homePageLabel.setFont(new java.awt.Font("Tahoma", 1, 11));
         homePageLabel.setText("Home Page:");

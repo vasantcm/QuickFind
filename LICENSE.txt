@@ -1,7 +1,7 @@
     QuickFind (http://quickfind.sourceforge.net/)
     Cross-platform Java application for searching files in your Computer.
 
-    Copyright (c) 2010, 2012 Vasantkumar Mulage
+    Copyright (c) 2010, 2013 Vasantkumar Mulage
 
     All rights reserved.
 
