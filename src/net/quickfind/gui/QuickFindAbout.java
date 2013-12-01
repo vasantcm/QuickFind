@@ -34,10 +34,16 @@
 package net.quickfind.gui;
 
 import java.awt.Desktop;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.JComponent;
+import javax.swing.JRootPane;
+import javax.swing.KeyStroke;
 import net.quickfind.config.PropertyPage;
 
 /*
@@ -246,7 +252,7 @@ public class QuickFindAbout extends javax.swing.JDialog {
         } catch (URISyntaxException uRISyntaxException) {
             LOGGER.log(Level.SEVERE, "Invalid URI passed", uRISyntaxException);
         } catch (IOException iOException) {
-            LOGGER.log(Level.SEVERE, "Browser failed to lauch", iOException);
+            LOGGER.log(Level.SEVERE, "Browser failed to launch", iOException);
         }
     }//GEN-LAST:event_homePageValueLabelMouseClicked
 
@@ -274,9 +280,26 @@ public class QuickFindAbout extends javax.swing.JDialog {
         } catch (URISyntaxException URISyntaxEx) {
             LOGGER.log(Level.SEVERE, "Invalid URI passed", URISyntaxEx);
         } catch (IOException iOException) {
-            LOGGER.log(Level.SEVERE, "Browser failed to lauch", iOException);
+            LOGGER.log(Level.SEVERE, "Browser failed to launch", iOException);
         }
-    }//GEN-LAST:event_donateIconLabelMouseClicked
+    }
+
+    @Override
+    protected JRootPane createRootPane() {
+        ActionListener actionListener = new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                setVisible(false);
+                dispose();
+            }
+        };
+        JRootPane jRootPane = new JRootPane();
+        KeyStroke keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
+        jRootPane.registerKeyboardAction(actionListener, keyStroke, JComponent.WHEN_IN_FOCUSED_WINDOW);
+        return jRootPane;
+    }
+	//GEN-LAST:event_donateIconLabelMouseClicked
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel authorLabel;
     private javax.swing.JLabel authorNameLabel;
