@@ -35,7 +35,13 @@ package net.quickfind.config;
 
 import java.awt.Font;
 import java.io.File;
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.Icon;
 import javax.swing.filechooser.FileSystemView;
 
@@ -83,22 +89,32 @@ public class PropertyPage {
     /*
      * GUI Constants
      */
-    public static final Font DEFAULT_RESULT_TABLE_FONT = new Font("Tahoma", 0, 12);
+    public static final Font DEFAULT_RESULT_TABLE_FONT = new Font("Tahoma", 0, 11);
     public static final Font DEFAULT_BUTTON_FONT = new Font("Tahoma", 0, 12);
     public static final Font DEFAULT_TEXT_FIELD_FONT = new Font("Tahoma", 0, 12);
-    public static final int DEFAULT_RESULT_TABLE_ROW_HEIGHT = 32;
+    public static final int DEFAULT_RESULT_TABLE_ROW_HEIGHT = 30;
+    public static final int DEFAULT_RESULT_TABLE_HEADER_HEIGHT = 28;
+    public static final String DEFAULT_DATETIME_FORMAT = "dd MMM yyyy hh:mm a";
+    public static final int DEFAULT_CACHEMANAGER_TABLE_ROW_HEIGHT = 20;
+    public static final Font DEFAULT_CACHEMANAGER_TABLE_FONT = new Font("Tahoma", 0, 11);
+    public static final int DEFAULT_CACHEMANAGER_TABLE_HEADER_HEIGHT = 28;
 
     /*
      * Application Information
      */
     public static final String COPY_RIGHT = "© 2013 Vasantkumar Mulage";
-    public static final String PRODUCT_VERSION = "<html>  <font size='4'>1.0.1.2</font> <font size='2'>BETA</font> </html>";
+    public static final String PRODUCT_VERSION = "<html>  <font size='4'>1.1.0.3</font> <font size='2'>BETA</font> </html>";
     public static final String WEBSITE = "<html><a href=\\'http://quickfind.sf.net/'>http://quickfind.sf.net/</a></html>";
-
     public static Icon directoryIcon;
+    public static Icon defaultFileIcon;
     private static String cacheDirectory;
     private static String currentOS = null;
-    private static final int SEARCH_RESULT_SET_LIMIT = 1000;
+    private static int SEARCH_RESULT_LIMIT = 1000;
+    private static boolean LOAD_DEFAULTS = false;
+    /*
+     * Exception logger
+     */
+    private final static Logger LOGGER = Logger.getLogger(PropertyPage.class.getName());
 
     /*
      * Loading directory icon from a temp directory
@@ -106,6 +122,25 @@ public class PropertyPage {
     static {
         String directoryPath = System.getProperty("java.io.tmpdir");
         directoryIcon = FileSystemView.getFileSystemView().getSystemIcon(new File(directoryPath));
+    }
+
+    /*
+     * Loading file icon from a temp file
+     */
+    static {
+        try {
+            /*
+             * creates a temp file
+             */
+            DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+            File tempFile = File.createTempFile("temp_" + dateFormat.format(new Date()), null);
+            defaultFileIcon = FileSystemView.getFileSystemView().getSystemIcon(tempFile);
+            tempFile.delete();
+        } catch (IOException iOException) {
+            LOGGER.log(Level.SEVERE, "An IO error occured", iOException);
+        } catch (Exception unknownException) {
+            LOGGER.log(Level.SEVERE, "Unknown error", unknownException);
+        }
     }
 
     /*
@@ -123,23 +158,44 @@ public class PropertyPage {
     }
 
     /*
-     * @return  the GLOBAL_RESULT_SET_LIMIT
+     * @return  the SEARCH_RESULT_LIMIT
      */
-    public static int get_SEARCH_RESULT_SET_LIMIT() {
-        return SEARCH_RESULT_SET_LIMIT;
+    public static int getSearchResultLimit() {
+        return SEARCH_RESULT_LIMIT;
+    }
+
+    /*
+     * updates the SEARCH_RESULT_LIMIT
+     */
+    public static void updateSearchResultLimit() {
+        SEARCH_RESULT_LIMIT = Preference.getSearchResultLimit();
+    }
+
+    /*
+     * @return  the LOAD_DEFAULTS
+     */
+    public static boolean getLoadDefaults() {
+        return LOAD_DEFAULTS;
+    }
+
+    /*
+     * updates  the LOAD_DEFAULTS
+     */
+    public static void updateLoadDefaults() {
+        LOAD_DEFAULTS = Preference.isLoadDefaults();
     }
 
     /**
      * @return the isSystemStartUp
      */
-    public static boolean isIsSystemStartUp() {
+    public static boolean isSystemStartUp() {
         return isSystemStartUp;
     }
 
     /**
      * @param aIsSystemStartUp the isSystemStartUp to set
      */
-    public static void setIsSystemStartUp(boolean aIsSystemStartUp) {
+    public static void setSystemStartUp(boolean aIsSystemStartUp) {
         isSystemStartUp = aIsSystemStartUp;
     }
 
@@ -258,7 +314,7 @@ public class PropertyPage {
      */
     private static String getOsName() {
         if (currentOS == null) {
-            currentOS = System.getProperty("os.name");
+            currentOS = System.getProperty("os.name").toLowerCase();
         }
         return currentOS;
     }
@@ -267,21 +323,21 @@ public class PropertyPage {
      * @return  whether current Operating System is Windows OS
      */
     public static boolean isWindows() {
-        return getOsName().startsWith("Windows");
+        return getOsName().contains("windows");
     }
 
     /*
      * @return  whether current Operating System is Unix OS
      */
     public static boolean isUnix() {
-        return getOsName().contains("Unix");
+        return getOsName().contains("unix");
     }
 
     /*
      * @return  whether current Operating System is Linux OS
      */
     public static boolean isLinux() {
-        return getOsName().contains("Linux");
+        return getOsName().contains("linux");
     }
 
     /*

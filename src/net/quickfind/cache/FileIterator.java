@@ -34,6 +34,8 @@
 package net.quickfind.cache;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.quickfind.config.PropertyPage;
@@ -82,6 +84,18 @@ public class FileIterator extends Thread {
      */
     private int cacheIndex;
     /*
+     * Cache root seperated from includes path
+     */
+    private String splittedCacheRoot;
+    /*
+     * The path excluded from caching
+     */
+    private String excludedPath;
+    /*
+     * List of excluded paths from caching
+     */
+    private ArrayList<String> excludedRootsList;
+    /*
      * Thread lock to hold current thread
      */
     private final Object FILE_ITERATOR_THREAD_LOCK = new Object();
@@ -102,7 +116,16 @@ public class FileIterator extends Thread {
         cacheIndex = cachePage.getNextCacheIndex(String.valueOf(cacheRoot.hashCode()));
         symbolTable = new SymbolTable(cacheRoot, cacheIndex);
         localItemsCount = startTime = endTime = 0L;
-        cache = new Cache();
+        for (int i = 0; i < aCachePage.getCacheList().size(); i++) {
+            if (((Cache) aCachePage.getCacheList().get(i)).getIncludedPath().equals(aCacheRoot)) {
+                cache = (Cache) aCachePage.getCacheList().get(i);
+                excludedPath = cache.getExcludedPath();
+                break;
+            }
+        }
+        if (cache == null) {
+            cache = new Cache();
+        }
     }
 
     /*
@@ -110,9 +133,9 @@ public class FileIterator extends Thread {
      */
     protected void runScanner() {
         this.setPriority(NORM_PRIORITY);
-        this.start();
         synchronized (this.FILE_ITERATOR_THREAD_LOCK) {
             try {
+                this.start();
                 this.FILE_ITERATOR_THREAD_LOCK.wait();    //blocking thread to enable single thread operation
             } catch (InterruptedException interruptedEx) {
                 LOGGER.log(Level.SEVERE, "Current Thread interrupted", interruptedEx);
@@ -127,11 +150,17 @@ public class FileIterator extends Thread {
         startTime = System.currentTimeMillis();
         PropertyPage.incrementIteratorThreadAliveCount();
         cache.setLocalCacheIndex(String.valueOf(cacheIndex));
-        cache.setName(String.valueOf(cacheRoot.hashCode()));
-        cache.setPath(cacheRoot);
         cache.setStartTimeStamp(String.valueOf(startTime));
         cache.setSeedStartedFrom(String.valueOf(1));
-        symbolTable.addCacheRoot(cacheRoot);
+        if (excludedPath != null) {
+            StringTokenizer excludesStringTokenizer = new StringTokenizer(excludedPath, "|");
+            excludedRootsList = new ArrayList<String>(excludesStringTokenizer.countTokens());
+            while (excludesStringTokenizer.hasMoreTokens()) {
+                excludedRootsList.add(excludesStringTokenizer.nextToken());
+            }
+        } else {
+            excludedRootsList = new ArrayList<String>(0);
+        }
     }
 
     /*
@@ -156,7 +185,12 @@ public class FileIterator extends Thread {
     @Override
     public void run() {
         initializeFileIterator();
-        iterateFilesInDirectory(cacheRoot);
+        StringTokenizer includesStringTokenizer = new StringTokenizer(cacheRoot, "|");
+        while (includesStringTokenizer.hasMoreTokens()) {
+            splittedCacheRoot = includesStringTokenizer.nextToken();
+            symbolTable.addCacheRoot(splittedCacheRoot);
+            iterateFilesInDirectory(splittedCacheRoot);
+        }
         finalizeFileIterator();
         signal();   //release the FILE_ITERATOR_THREAD_LOCK
     }
@@ -171,6 +205,18 @@ public class FileIterator extends Thread {
     }
 
     /*
+     * Checks whether the given directory path excluded from caching
+     * @param Directory path
+     * @return true if it exists in the excluded roots list otherwise false
+     */
+    private boolean isExcluded(final String rootDirectory) {
+        for (int i = 0; i < excludedRootsList.size(); i++) {
+            return (rootDirectory.startsWith(excludedRootsList.get(i).toString()));
+        }
+        return false;
+    }
+
+    /*
      * Iterates through all child files/directory under rootDirectory
      * @param   rootDirectory of the iteration
      */
@@ -181,7 +227,11 @@ public class FileIterator extends Thread {
             return; //caching process aborted by user
         }
 
-        if (!rootDirectory.equals(cacheRoot)) {
+        if (isExcluded(rootDirectory)) {
+            return; //excluded from caching
+        }
+
+        if (!rootDirectory.equals(splittedCacheRoot)) {
             symbolTable.add(rootDirectory, true);   //cache the directory
             localItemsCount++;
         }
@@ -191,7 +241,7 @@ public class FileIterator extends Thread {
         parentDirectory = null;
         if (childFiles != null) {
             for (int i = 0; i < childFiles.length; i++) {
-                
+
                 if (childFiles[i].isDirectory()) {
                     iterateFilesInDirectory(childFiles[i].getAbsolutePath()); //recursive call to subdirectory
                 } else {

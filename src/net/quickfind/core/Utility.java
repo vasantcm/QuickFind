@@ -36,6 +36,8 @@ package net.quickfind.core;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -257,7 +259,7 @@ public class Utility {
         File allFiles[] = absolutePath.listFiles();
         for (int i = 0; i < allFiles.length; i++) {
             String fileName = allFiles[i].getName();
-            if (cleanType == 1) {     // cleans all cache files
+            if (cleanType == 1) {     // cleans all cache files including configuration
                 if (fileName.endsWith(PropertyPage.COMPRESSED_FILE_EXTENSION)
                         || fileName.endsWith(PropertyPage.RAW_FILE_EXTENSION)
                         || fileName.endsWith(PropertyPage.SYMBOLS_FILE_EXTENSION)
@@ -333,5 +335,14 @@ public class Utility {
             }
         }
         return true;
+    }
+
+    /*
+     * Converts long milliSeconds to custom date time format
+     * @param   date/time format,milliSeconds
+     * @return custom date/time
+     */
+    public static String getDateTimeFormat(String format, long milliSeconds) {
+        return (new SimpleDateFormat(format).format(new Date(milliSeconds)).toString());
     }
 }

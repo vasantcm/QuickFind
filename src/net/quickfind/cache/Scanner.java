@@ -39,7 +39,6 @@ import java.util.logging.Logger;
 import javax.swing.SwingWorker;
 import net.quickfind.core.CacheElement;
 import net.quickfind.config.PropertyPage;
-import net.quickfind.core.Utility;
 
 /*
  * Scanner.java
@@ -80,6 +79,7 @@ public class Scanner extends SwingWorker<Void, Void> implements CacheElement {
     /*
      * Background process to handle scanner
      */
+    @Override
     protected Void doInBackground() {
         PropertyPage.resetCachedFilesCount();
         scanListSize = scanList.size();
@@ -90,7 +90,7 @@ public class Scanner extends SwingWorker<Void, Void> implements CacheElement {
 
         fileIterator = new FileIterator[scanList.size()];
         for (int i = 0; i < scanListSize; i++) {
-            fileIterator[i] = new FileIterator(scanList.get(i).toString(), cachePage, this);
+            fileIterator[i] = new FileIterator(cachePage.getIncludedCachePath(scanList.get(i).toString()), cachePage, this);
             fileIterator[i].runScanner();
             sendProgress(); //update progress to user
         }
@@ -134,7 +134,6 @@ public class Scanner extends SwingWorker<Void, Void> implements CacheElement {
                     Thread.currentThread().interrupt();
                 }
             }
-
         }
         return true;
     }
@@ -143,6 +142,7 @@ public class Scanner extends SwingWorker<Void, Void> implements CacheElement {
      * Adds cache name to the scan list
      * @param   cache name
      */
+    @Override
     public void addCache(String cacheName) {
         scanList.add(cacheName);
     }
@@ -151,6 +151,7 @@ public class Scanner extends SwingWorker<Void, Void> implements CacheElement {
      * Adds cache list to the scan list
      * @param   cache list
      */
+    @Override
     public void addCacheList(ArrayList<String> cacheList) {
         scanList = cacheList;
     }

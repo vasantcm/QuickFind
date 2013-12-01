@@ -95,7 +95,7 @@ public class QuickSearch extends Thread {
     /*
      * Search result flag
      */
-    private boolean isItemFound=false;
+    private boolean isItemFound = false;
     /*
      * Exception logger
      */
@@ -153,10 +153,11 @@ public class QuickSearch extends Thread {
         } else {
             searchPattern = convertAsWildCard(searchContent);
         }
-        this.start();
+
         //current thread THREAD_LOCK
         synchronized (this.QUICK_SEARCH_THREAD_LOCK) {
             try {
+                this.start();
                 this.QUICK_SEARCH_THREAD_LOCK.wait();
             } catch (InterruptedException interruptedEx) {
                 LOGGER.log(Level.SEVERE, "Current Thread interrupted", interruptedEx);
@@ -191,6 +192,9 @@ public class QuickSearch extends Thread {
      * @return  searchString in WildCard format
      */
     private String convertAsWildCard(String stringToSearch) {
+        stringToSearch = stringToSearch.replace("(", "\\(").replace(")", "\\)");
+        stringToSearch = stringToSearch.replace("[", "\\[").replace("]", "\\]");
+        stringToSearch = stringToSearch.replace("{", "\\{").replace("}", "\\}");
         StringBuffer searchString = new StringBuffer(stringToSearch);
         for (int i = 0; i < searchString.length(); i++) {
             if (searchString.charAt(i) == '.') {
@@ -278,6 +282,9 @@ public class QuickSearch extends Thread {
     private void iterateCache() {
         BufferedReader bufferedReader = null;
         try {
+            if (!(new File(PropertyPage.getCacheDirectory() + cacheRoot.hashCode() + PropertyPage.RAW_FILE_EXTENSION).exists())) {
+                return;
+            }
             bufferedReader = new BufferedReader(new FileReader((new File(PropertyPage.getCacheDirectory() + cacheRoot.hashCode() + PropertyPage.RAW_FILE_EXTENSION))));
             while (bufferedReader.ready()) {
                 //reads cache formatted raw path
@@ -292,7 +299,7 @@ public class QuickSearch extends Thread {
                     rawDataWriter.writeToFile(rawPath);     //writes rawpath to search result raw file
                     directorySymbolList.add(rawPath.substring(0, rawPath.indexOf(PropertyPage.FILE_SEPARATOR)));
                     if (PropertyPage.isFirstPush()) {
-                        if (PropertyPage.getSearchedFilesCount() > PropertyPage.get_SEARCH_RESULT_SET_LIMIT()) {
+                        if (PropertyPage.getSearchedFilesCount() > PropertyPage.getSearchResultLimit()) {
                             removeDuplicates();     // removes duplicate symbols
                             resolveSymbols();       // writes absolute path of the symbols to file
                             rawDataWriter.flushRawDataWriter();

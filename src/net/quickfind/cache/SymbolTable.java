@@ -89,6 +89,10 @@ public class SymbolTable {
      */
     private long localseedValue = 0L;
     /*
+     * Cache root seperated from includes path
+     */
+    private String splittedCacheRoot;
+    /*
      * Exception logger
      */
     private final static Logger LOGGER = Logger.getLogger(SymbolTable.class.getName());
@@ -119,6 +123,7 @@ public class SymbolTable {
      * @param   cacheRoot is a root directory
      */
     protected void addCacheRoot(String cacheRoot) {
+        splittedCacheRoot = cacheRoot;
         String seedValue = cacheIndex + String.valueOf(localseedValue);
         increaseSeedValue();
         directoryTable.put(cacheRoot, seedValue);
@@ -207,7 +212,7 @@ public class SymbolTable {
                 break;  //no elements remain
             }
             Map.Entry pairs = (Map.Entry) it.next();
-            if (pairs.getKey().toString().equals(cacheRoot)) {
+            if (pairs.getKey().toString().equals(splittedCacheRoot)) {
                 continue;
             }
             if (referenceDirectoryTable.containsKey(pairs.getKey().toString())) {
@@ -243,6 +248,9 @@ public class SymbolTable {
     private int getElementCount(String filePath) {
         StringTokenizer stringTokenizer = new StringTokenizer(filePath, PropertyPage.FILE_SEPARATOR);
         if (PropertyPage.isLinux() || PropertyPage.isUnix()) {
+            if (stringTokenizer.countTokens() <= 1) {
+                return 0;
+            }
             return (stringTokenizer.countTokens() + 1);
         }
         return stringTokenizer.countTokens();
@@ -254,11 +262,13 @@ public class SymbolTable {
      * @return  absolute directory path
      */
     private String getParentPath(String filePath) {
-        if (filePath.contains(PropertyPage.FILE_SEPARATOR)) {
-            if (getElementCount(filePath) <= 2) {
-                return (filePath.substring(0, filePath.lastIndexOf(PropertyPage.FILE_SEPARATOR) + 1));
-            } else {
-                return (filePath.substring(0, filePath.lastIndexOf(PropertyPage.FILE_SEPARATOR)));
+        if (!filePath.equals(splittedCacheRoot)) {
+            if (filePath.contains(PropertyPage.FILE_SEPARATOR)) {
+                if (getElementCount(filePath) <= 2) {
+                    return (filePath.substring(0, filePath.lastIndexOf(PropertyPage.FILE_SEPARATOR) + 1));
+                } else {
+                    return (filePath.substring(0, filePath.lastIndexOf(PropertyPage.FILE_SEPARATOR)));
+                }
             }
         }
         return filePath;
@@ -279,6 +289,9 @@ public class SymbolTable {
      * @return  directory name
      */
     private String getDirectoryName(String filePath) {
+        if (filePath.equals(splittedCacheRoot)) {
+            return "";  //It is root directory
+        }
         if (filePath.contains(PropertyPage.FILE_SEPARATOR)) {
             if (getElementCount(filePath) < 2) {
                 return PropertyPage.FILE_SEPARATOR;

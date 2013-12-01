@@ -40,8 +40,6 @@ import javax.swing.SwingWorker;
 import net.quickfind.cache.Cache;
 import net.quickfind.core.CacheElement;
 import net.quickfind.cache.CachePage;
-import net.quickfind.config.PropertyPage;
-import net.quickfind.core.Utility;
 
 /*
  * Search.java
@@ -70,6 +68,10 @@ public class Search extends SwingWorker<Void, Void> implements CacheElement {
      */
     private String searchPattern;
     /*
+     * Cachepage to handle cache related data
+     */
+    private CachePage cachePage;
+    /*
      * Exception logger
      */
     private final static Logger LOGGER = Logger.getLogger(Search.class.getName());
@@ -83,17 +85,19 @@ public class Search extends SwingWorker<Void, Void> implements CacheElement {
         rawDataWriter = new RawDataWriter();
         this.searchPattern = searchString;
         cachedCacheList = cachePage.getCacheList();
+        this.cachePage = cachePage;
     }
 
     /*
      * Looks for the pattern match across the caches
      */
+    @Override
     public Void doInBackground() {
         for (int i = 0; i < searchCacheList.size(); i++) {
             for (int j = 0; j < cachedCacheList.size(); j++) {
-                if (((Cache) cachedCacheList.get(j)).getName().equals(String.valueOf(searchCacheList.get(i).toString().hashCode()))) {
+                if (((Cache) cachedCacheList.get(j)).getCacheName().equals(searchCacheList.get(i).toString())) {
                     try {
-                        quickSearch = new QuickSearch(searchCacheList.get(i).toString(), rawDataWriter, this);
+                        quickSearch = new QuickSearch(cachePage.getIncludedCachePath(searchCacheList.get(i).toString()), rawDataWriter, this);
                         quickSearch.findNow(searchPattern);
                         quickSearch.join();     //Waits for quickSearch thread
                         quickSearch = null;
@@ -124,6 +128,7 @@ public class Search extends SwingWorker<Void, Void> implements CacheElement {
      * Adds cache name to the search list
      * @param   cache name
      */
+    @Override
     public void addCache(String cacheName) {
         searchCacheList.add(cacheName);
     }
@@ -132,6 +137,7 @@ public class Search extends SwingWorker<Void, Void> implements CacheElement {
      * Adds cache list to the search list
      * @param   cache list
      */
+    @Override
     public void addCacheList(ArrayList cacheList) {
         this.searchCacheList = cacheList;
     }

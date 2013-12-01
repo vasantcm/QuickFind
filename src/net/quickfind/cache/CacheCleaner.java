@@ -45,6 +45,7 @@ public class CacheCleaner implements Runnable {
      * Clean up method to delete generated cache files
      * Called when application terminates
      */
+    @Override
     public void run() {
         Utility.cacheCleaner(null, 2);
     }

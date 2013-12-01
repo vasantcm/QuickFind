@@ -33,71 +33,72 @@
 
 package net.quickfind.config;
 
-import java.io.File;
 import java.util.logging.Logger;
-import net.quickfind.core.Utility;
+import java.util.prefs.Preferences;
+import javax.swing.UIManager;
 
 /*
- * Init.java
- * @author  Copyright (C) 2012 Vasantkumar Mulage
+ * Preference.java
+ * @author  Copyright (C) 2013 Vasantkumar Mulage
  */
-public class Init {
+public class Preference {
+
+    /*
+     * Initialize the preference node
+     */
+    static Preferences preferences = Preferences.userNodeForPackage(Preference.class);
+    /*
+     * Preference nodes used by application
+     */
+    static final String SEARCH_RESULT_LIMIT = "SrcLim";
+    static final String CURRENT_SELECTED_THEME = "CurLim";
+    static final String LOAD_DEFAULTS = "IsDft";
 
     /*
      * Exception logger
      */
-    private final static Logger LOGGER = Logger.getLogger(Init.class.getName());
-
+    private final static Logger LOGGER = Logger.getLogger(Preference.class.getName());
     /*
-     * Initiates application essentials
+     * @return  the SEARCH_RESULT_LIMIT
      */
-    public void initializeApplication() {
-        createApplicationWorkingDirectory();
-        //createRootList(); //Not required
-        cleanCacheFiles();
-        PropertyPage.updateSearchResultLimit();
-        PropertyPage.updateLoadDefaults();
+
+    public static int getSearchResultLimit() {
+        return preferences.getInt(SEARCH_RESULT_LIMIT, PropertyPage.getSearchResultLimit());
     }
 
     /*
-     * Creates cache directory in the user home directory
+     * @param newValue the SEARCH_RESULT_LIMIT to set
+     * @return  the SEARCH_RESULT_LIMIT
      */
-    private void createApplicationWorkingDirectory() {
-        String applicationWorkingDirecoty = System.getProperty("user.home");
-        File applicationWorkingDirecotyFile = new File(applicationWorkingDirecoty);
-        PropertyPage.setCacheDirectory(applicationWorkingDirecotyFile.toString() + PropertyPage.FILE_SEPARATOR + "cache" + PropertyPage.FILE_SEPARATOR);
-        File absolutePath = new File(PropertyPage.getCacheDirectory());
-        if (!absolutePath.isDirectory()) {
-            if (!absolutePath.exists()) {
-                absolutePath.mkdirs();
-            }
-        }
-        applicationWorkingDirecotyFile = null;
-        absolutePath = null;
+    public static void setSearchResultLimit(int newValue) {
+        preferences.putInt(SEARCH_RESULT_LIMIT, newValue);
     }
 
     /*
-     * Creates rootList of the system
+     * @return  the LOAD_DEFAULTS
      */
-    private void createRootList() {
-        File[] rootList;
-        if (PropertyPage.isLinux() || PropertyPage.isUnix()) {
-            File parentDirectory = new File("/");
-            rootList = parentDirectory.listFiles();
-        } else {
-            rootList = File.listRoots();
-        }
-        for (int i = 0; i < rootList.length; i++) {
-            if (rootList[i].isDirectory()) {
-                PropertyPage.CACHE_LIST.add(rootList[i].toString());
-            }
-        }
+    public static boolean isLoadDefaults() {
+        return preferences.getBoolean(LOAD_DEFAULTS, PropertyPage.getLoadDefaults());
     }
 
     /*
-     * Cleans all cache files except compressed and configuration
+     * @param  newValue the LOAD_DEFAULTS to set
      */
-    private void cleanCacheFiles() {
-        Utility.cacheCleaner(null, 2);
+    public static void setLoadDefaults(boolean newValue) {
+        preferences.putBoolean(LOAD_DEFAULTS, newValue);
+    }
+
+    /*
+     * @return  the CURRENT_SELECTED_THEME
+     */
+    public static String getCurrentSelectedTheme() {
+        return preferences.get(CURRENT_SELECTED_THEME, UIManager.getSystemLookAndFeelClassName());
+    }
+
+    /*
+     * @param newValue the CURRENT_SELECTED_THEME to set
+     */
+    public static void setCurrentSelectedTheme(String newValue) {
+        preferences.put(CURRENT_SELECTED_THEME, newValue);
     }
 }

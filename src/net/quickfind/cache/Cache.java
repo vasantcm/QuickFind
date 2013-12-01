@@ -41,73 +41,109 @@ import javax.xml.bind.annotation.XmlType;
  * @author  Copyright (C) 2012 Vasantkumar Mulage
  */
 @XmlRootElement(name = "cache")
-@XmlType(propOrder = {"path", "name", "totalItemsScanned", "seedStartedFrom",
+@XmlType(propOrder = {"includedPath", "excludedPath", "cacheName", "userGivenName", "totalItemsScanned", "seedStartedFrom",
     "startTimeStamp", "endTimeStamp", "timeTakenToCache", "cacheFileSize", "localCacheIndex"})
 public class Cache {
-    
+
     /*
      * Encoded name of the cache
      */
-    private String name;
+    private String cacheName = "";
     /*
-     * Absolute path of the cache
+     * User provided name of the cache
      */
-    private String path;
+    private String userGivenName = "";
+    /*
+     * Absolute include path of the cache
+     */
+    private String includedPath = "";
+    /*
+     * Excluded absolute path from the cache
+     */
+    private String excludedPath = "";
     /*
      * Intial seed value of the SymbolTable
      */
-    private String seedStartedFrom;
+    private String seedStartedFrom = "";
     /*
      * Total number of items scanned
      */
-    private String totalItemsScanned;
+    private String totalItemsScanned = "0";
     /*
      * File size of the cache file
      */
-    private String cacheFileSize;
+    private String cacheFileSize = "";
     /*
      * The time when caching process started
      */
-    private String startTimeStamp;
+    private String startTimeStamp = "";
     /*
      * The time when caching process finished
      */
-    private String endTimeStamp;
+    private String endTimeStamp = "";
     /*
      * Time elapsed to cache
      */
-    private String timeTakenToCache;
+    private String timeTakenToCache = "";
     /*
      * Cache index of the cache
      */
-    private String localCacheIndex;
+    private String localCacheIndex = "";
 
     /*
-     * @return  the name
+     * @return  the cache name
      */
-    public String getName() {
-        return name;
+    public String getCacheName() {
+        return cacheName;
     }
 
     /*
-     * @param   name the name to set
+     * @param   name the cache name to set
      */
-    public void setName(String name) {
-        this.name = name;
+    public void setCacheName(String name) {
+        this.cacheName = name;
     }
 
     /*
-     * @return  the path
+     * @return  the userGivenName
      */
-    public String getPath() {
-        return path;
+    public String getuserGivenName() {
+        return userGivenName;
     }
 
     /*
-     * @param   path the path to set
+     * @param   userGivenName the userGivenName to set
      */
-    public void setPath(String path) {
-        this.path = path;
+    public void setuserGivenName(String userGivenName) {
+        this.userGivenName = userGivenName;
+    }
+
+    /*
+     * @return  the included path
+     */
+    public String getIncludedPath() {
+        return includedPath;
+    }
+
+    /*
+     * @param   path the included path to set
+     */
+    public void setIncludedPath(String path) {
+        this.includedPath = path;
+    }
+
+    /*
+     * @return  the excludedPath
+     */
+    public String getExcludedPath() {
+        return excludedPath;
+    }
+
+    /*
+     * @param   excludedPath the excludedPath to set
+     */
+    public void setExcludedPath(String excludedPath) {
+        this.excludedPath = excludedPath;
     }
 
     /*

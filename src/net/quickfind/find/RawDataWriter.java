@@ -97,7 +97,7 @@ public class RawDataWriter {
                 rawDataBufferedWriter.write(rawData);
                 rawDataBufferedWriter.newLine();
                 ++totalLinesWrote;
-                if ((totalLinesWrote % PropertyPage.get_SEARCH_RESULT_SET_LIMIT()) == 0) {
+                if ((totalLinesWrote % PropertyPage.getSearchResultLimit()) == 0) {
                     flushRawDataWriter();
                     rawFileIndexWriter.write(totalLinesWrote + "=" + lengthFinder.length());
                     rawFileIndexWriter.newLine();
