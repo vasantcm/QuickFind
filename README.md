@@ -50,6 +50,20 @@ commercial applications. Please refer http://opensource.org/licenses/BSD-3-Claus
 
 Changelog
 ------------------------------------------------------------------------------------------------------------------------------------
+
+#Version 1.1.0 Beta (16-08-2013)
+	Added cache manager to manage all caches from one corner
+	Added user preference library to save user data
+	Added default cache option that loads all roots from hard drive
+	Now hides active window on ESC key
+	Now you can exclude a directory from caching
+	Supports keyboard's context menu (right click) button
+	Fixed GUI, cache & search related bugs for linux operating system
+	Fixed bug related to search result table row sorter
+	Fixed bug related to escape characters in searchbox
+	Fixed file & directory browse support on linux
+	Tested on fedora and ubuntu
+	
 #Version 1.0.1 Beta (05-05-2013)
 	Fixed window resize problem
 	Fixed auto run bug on system start
