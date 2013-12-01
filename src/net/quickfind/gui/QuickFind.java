@@ -38,6 +38,7 @@ import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Desktop;
 import java.awt.Dimension;
@@ -56,7 +57,12 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
-import java.awt.event.MouseAdapter;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
@@ -73,28 +79,46 @@ import java.util.HashMap;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.AbstractButton;
+import javax.swing.ButtonGroup;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JRootPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JToolBar;
+import javax.swing.JViewport;
+import javax.swing.KeyStroke;
 import javax.swing.LookAndFeel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileSystemView;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumn;
+import javax.swing.table.TableColumnModel;
+import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
+import net.quickfind.cache.Cache;
 import net.quickfind.config.PropertyPage;
 import net.quickfind.cache.CachePage;
 import net.quickfind.cache.Scanner;
+import net.quickfind.config.Preference;
 import net.quickfind.core.Utility;
 import net.quickfind.find.Search;
 
@@ -151,7 +175,7 @@ public class QuickFind extends javax.swing.JFrame {
     /*
      * Default limit for displaying search resultset
      */
-    private final int RESULT_SET_LIMIT = PropertyPage.get_SEARCH_RESULT_SET_LIMIT();
+    private int RESULT_SET_LIMIT = PropertyPage.getSearchResultLimit();
     //GUI Components Declaration
     private javax.swing.JMenu editMenu;
     private javax.swing.JMenu helpMenu;
@@ -170,13 +194,20 @@ public class QuickFind extends javax.swing.JFrame {
     private javax.swing.JMenuItem selectAllMenuItem;
     //private javax.swing.JMenuItem contentsMenuItem;
     private javax.swing.JMenuItem aboutMenuItem;
+    ButtonGroup themesButtonGroup;
     private javax.swing.JPopupMenu popUpMenu;
     private javax.swing.JTextField searchTextField;
     private javax.swing.JButton quickFindButton;
     private javax.swing.JButton cacheButton;
+    private javax.swing.JButton newCacheButton;
+    private javax.swing.JButton editCacheButton;
+    private javax.swing.JButton deleteCacheButton;
+    private javax.swing.JButton cacheManagerCacheButton;
+    private javax.swing.JCheckBox cacheManagerDefaultCache;
     private javax.swing.JComboBox searchComboBox;
     private javax.swing.JComboBox cacheComboBox;
     private javax.swing.JTable resultTable;
+    private javax.swing.JTable cacheCollectionTable;
     private javax.swing.JToolBar statusToolBar;
     private javax.swing.JLabel statusLabel;
     private javax.swing.JLabel resultSetIndexLabel;
@@ -184,15 +215,22 @@ public class QuickFind extends javax.swing.JFrame {
     private javax.swing.JButton nextRowsButton;
     private javax.swing.JTabbedPane qfTabbedPane;
     private javax.swing.JScrollPane resultTableScrollPane;
+    private javax.swing.JScrollPane cacheCollectionTableScrollPane;
+    private javax.swing.JPanel quickFindMainPanel;
     private javax.swing.JPanel quickFindPanel;
-    private javax.swing.JPanel advancedPanel;
-    //private javax.swing.JPanel cacheManagerPanel;
-    private javax.swing.JTextArea upcomingFeaturesTextArea;
+    //private javax.swing.JPanel advancedPanel;
+    private javax.swing.JPanel cacheManagerPanel;
+    private javax.swing.JPanel cacheManagerCacheEditSubPanel;
+    private javax.swing.JPanel cacheManagerCacheSubPanel;
+    private javax.swing.JPanel cacheManagerDefaultsSubPanel;
     private javax.swing.JPanel quickFindSubComponentsPanel;
+    private javax.swing.JPanel cacheManagerSubComponentsPanel;
+    private javax.swing.JTextArea upcomingFeaturesTextArea;
     /*
      * Sorts table rows
      */
     private TableRowSorter<DefaultTableModel> tableRowSorter;
+    private TableRowSorter<DefaultTableModel> cacheColletiontableRowSorter;
     /*
      * Exception logger
      */
@@ -214,7 +252,28 @@ public class QuickFind extends javax.swing.JFrame {
         initComponents();
         setQuickFindTray();
         initApplication();
-        applyNewLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        applyNewLookAndFeel(Preference.getCurrentSelectedTheme());
+    }
+
+    /*
+     * Register escape key listener
+     */
+    @Override
+    protected JRootPane createRootPane() {
+        ActionListener actionListener = new ActionListener() {
+
+            /*
+             * Hides main window whenever escape is pressed
+             */
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                setVisible(false);
+            }
+        };
+        JRootPane jRootPane = new JRootPane();
+        KeyStroke keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
+        jRootPane.registerKeyboardAction(actionListener, keyStroke, JComponent.WHEN_IN_FOCUSED_WINDOW);
+        return jRootPane;
     }
 
     /*
@@ -233,6 +292,7 @@ public class QuickFind extends javax.swing.JFrame {
 
             MouseListener mouseListener = new MouseListener() {
 
+                @Override
                 public void mouseClicked(MouseEvent e) {
                     if (isCaching) {
                         systemTrayCacheMenuItem.setLabel("Stop Caching");
@@ -241,12 +301,15 @@ public class QuickFind extends javax.swing.JFrame {
                     }
                 }
 
+                @Override
                 public void mouseEntered(MouseEvent e) {
                 }
 
+                @Override
                 public void mouseExited(MouseEvent e) {
                 }
 
+                @Override
                 public void mousePressed(MouseEvent e) {
                     if (e.getButton() == MouseEvent.BUTTON1) {
                         QuickFind.this.setVisible(true);
@@ -254,6 +317,7 @@ public class QuickFind extends javax.swing.JFrame {
                     }
                 }
 
+                @Override
                 public void mouseReleased(MouseEvent e) {
                     if (isCaching) {
                         systemTrayCacheMenuItem.setLabel("Stop Caching");
@@ -265,6 +329,7 @@ public class QuickFind extends javax.swing.JFrame {
 
             ActionListener exitActionListener = new ActionListener() {
 
+                @Override
                 public void actionPerformed(ActionEvent e) {
                     System.out.println("QuickFind Exiting...");
                     System.exit(0);
@@ -273,6 +338,7 @@ public class QuickFind extends javax.swing.JFrame {
 
             ActionListener activeActionListener = new ActionListener() {
 
+                @Override
                 public void actionPerformed(ActionEvent e) {
                     QFTrayIcon.displayMessage("QuickFind", "QuickFind is Active!", TrayIcon.MessageType.INFO);
                 }
@@ -280,6 +346,7 @@ public class QuickFind extends javax.swing.JFrame {
 
             ActionListener showActionListener = new ActionListener() {
 
+                @Override
                 public void actionPerformed(ActionEvent e) {
                     QuickFind.this.setVisible(true);
                     QuickFind.this.setExtendedState(QuickFind.this.getExtendedState() & ~JFrame.ICONIFIED);
@@ -288,6 +355,7 @@ public class QuickFind extends javax.swing.JFrame {
 
             ActionListener cacheActionListener = new ActionListener() {
 
+                @Override
                 public void actionPerformed(ActionEvent e) {
                     if (cacheButton.isEnabled()) {
                         cacheButton.doClick();
@@ -306,6 +374,7 @@ public class QuickFind extends javax.swing.JFrame {
 
             ActionListener aboutActionListener = new ActionListener() {
 
+                @Override
                 public void actionPerformed(ActionEvent e) {
                     new QuickFindAbout(QuickFind.this, true).setVisible(true);
                 }
@@ -349,9 +418,10 @@ public class QuickFind extends javax.swing.JFrame {
     private void applyNewLookAndFeel(final String newLook) {
         try {
             if (!isLookAndFeelAvailable(newLook)) {
-                JOptionPane.showMessageDialog(this, "Sorry this look not Supported!");
+                JOptionPane.showMessageDialog(this, "Sorry this look and feel (theme) not Supported!");
                 return;
             }
+            Preference.setCurrentSelectedTheme(newLook);
             UIManager.setLookAndFeel(newLook);
             SwingUtilities.updateComponentTreeUI(this);
         } catch (Exception exception) {
@@ -366,6 +436,9 @@ public class QuickFind extends javax.swing.JFrame {
      */
     private boolean isLookAndFeelAvailable(final String newLookAndFeel) {
         try {
+            if (newLookAndFeel == null || newLookAndFeel.isEmpty()) {
+                return false;
+            }
             Class newLookAndFeelClass = Class.forName(newLookAndFeel);
             LookAndFeel thisLookAndFeel = (LookAndFeel) (newLookAndFeelClass.newInstance());
             return thisLookAndFeel.isSupportedLookAndFeel();
@@ -397,6 +470,7 @@ public class QuickFind extends javax.swing.JFrame {
         helpMenu = new javax.swing.JMenu();
         //contentsMenuItem = new javax.swing.JMenuItem();
         aboutMenuItem = new javax.swing.JMenuItem();
+        themesButtonGroup = new ButtonGroup();
         searchComboBox = new javax.swing.JComboBox();
         cacheComboBox = new javax.swing.JComboBox();
 
@@ -404,13 +478,16 @@ public class QuickFind extends javax.swing.JFrame {
         searchComboBox.setToolTipText("select the cache");
         cacheComboBox.setToolTipText("select the cache root");
 
-        quickFindPanel = new JPanel(new BorderLayout(5, 5));
-        quickFindPanel.setBorder(new TitledBorder("")); //Border with empty title
+        quickFindMainPanel = new JPanel(new BorderLayout());
+        quickFindMainPanel.setBorder(new TitledBorder("")); //Border with empty title
 
-        advancedPanel = new JPanel(new BorderLayout(5, 5));
-        advancedPanel.setBorder(new TitledBorder(""));//Border with empty title
+        quickFindPanel = new JPanel(new BorderLayout());
+        //quickFindPanel.setBorder(new TitledBorder("")); //Border with empty title
 
-        //cacheManagerPanel = new JPanel(new BorderLayout(5, 5));
+        //advancedPanel = new JPanel(new BorderLayout());
+        //advancedPanel.setBorder(new TitledBorder(""));//Border with empty title
+
+        cacheManagerPanel = new JPanel(new BorderLayout());
         //cacheManagerPanel.setBorder(new TitledBorder(""));//Border with empty title
 
         upcomingFeaturesTextArea = new JTextArea();
@@ -418,10 +495,20 @@ public class QuickFind extends javax.swing.JFrame {
         upcomingFeaturesTextArea.setEditable(false);
         upcomingFeaturesTextArea.setBackground(Color.WHITE);
 
-        advancedPanel.add(upcomingFeaturesTextArea, BorderLayout.WEST);
-        advancedPanel.setBackground(Color.WHITE);
+        //advancedPanel.add(upcomingFeaturesTextArea, BorderLayout.WEST);
+        //advancedPanel.setBackground(Color.WHITE);
 
-        quickFindSubComponentsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        quickFindSubComponentsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        cacheManagerSubComponentsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+
+        cacheManagerCacheEditSubPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        cacheManagerCacheEditSubPanel.setBorder(new TitledBorder(""));
+
+        cacheManagerCacheSubPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        cacheManagerCacheSubPanel.setBorder(new TitledBorder(""));
+
+        cacheManagerDefaultsSubPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        cacheManagerDefaultsSubPanel.setBorder(new TitledBorder(""));
 
         qfTabbedPane = new javax.swing.JTabbedPane();
         qfTabbedPane.setTabLayoutPolicy(javax.swing.JTabbedPane.SCROLL_TAB_LAYOUT);
@@ -440,6 +527,7 @@ public class QuickFind extends javax.swing.JFrame {
 
         resultTable.setFont(PropertyPage.DEFAULT_RESULT_TABLE_FONT);
         resultTable.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_OFF);
+        resultTable.getTableHeader().setReorderingAllowed(false);
         resultTable.setSelectionBackground(Color.LIGHT_GRAY);
 
         tableRowSorter = new TableRowSorter<DefaultTableModel>(defaultTableModel);
@@ -461,6 +549,16 @@ public class QuickFind extends javax.swing.JFrame {
             @Override
             public void mousePressed(java.awt.event.MouseEvent evt) {
                 mousePressedOnResultTable(evt);
+                triggerPopUpMenu(evt);
+            }
+
+            /*
+             * If the selected item is directory then disables the Open PopUp MenuItem
+             */
+            @Override
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                mousePressedOnResultTable(evt);
+                triggerPopUpMenu(evt);
             }
         });
 
@@ -482,13 +580,23 @@ public class QuickFind extends javax.swing.JFrame {
         resultTableScrollPane = new JScrollPane(resultTable);   //adding scrollbar to the resultTable
         Dimension tablePreferredSize = resultTableScrollPane.getPreferredSize();
         resultTableScrollPane.setPreferredSize(new Dimension(tablePreferredSize.width, tablePreferredSize.height));
+
+        resultTableScrollPane.setColumnHeader(new JViewport() {
+
+            @Override
+            public Dimension getPreferredSize() {
+                Dimension dimension = super.getPreferredSize();
+                dimension.height = PropertyPage.DEFAULT_RESULT_TABLE_HEADER_HEIGHT;
+                return dimension;
+            }
+        });
+
         /*
          * Adjusting the column widths
          */
-        int nameColumnWidth = (int) (Toolkit.getDefaultToolkit().getScreenSize().getWidth() * 0.9);
-        int sizeColumnWidth = (int) Toolkit.getDefaultToolkit().getScreenSize().getWidth() - nameColumnWidth;
-        resultTable.getColumnModel().getColumn(0).setPreferredWidth(nameColumnWidth - 25);
-        resultTable.getColumnModel().getColumn(1).setPreferredWidth(sizeColumnWidth - 15);
+        resultTable.getColumnModel().getColumn(0).setPreferredWidth((int) (Toolkit.getDefaultToolkit().getScreenSize().getWidth() * 0.9));
+        resultTable.getColumnModel().getColumn(1).setPreferredWidth((int) (Toolkit.getDefaultToolkit().getScreenSize().getWidth() * 0.05));
+
         resultTable.setRowHeight(PropertyPage.DEFAULT_RESULT_TABLE_ROW_HEIGHT);
 
         resultTable.getColumnModel().getColumn(0).setCellRenderer(new ImageRenderer());
@@ -503,6 +611,7 @@ public class QuickFind extends javax.swing.JFrame {
          */
         cacheButton.addActionListener(new java.awt.event.ActionListener() {
 
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 cacheButtonActionPerformed(evt);
             }
@@ -515,6 +624,7 @@ public class QuickFind extends javax.swing.JFrame {
 
         quickFindButton.addActionListener(new java.awt.event.ActionListener() {
 
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 quickFindButtonActionPerformed(evt);
             }
@@ -525,20 +635,24 @@ public class QuickFind extends javax.swing.JFrame {
         searchTextField.setToolTipText("Type Here");
 
         /*
-         * Resize searchTextField width according to frame width
+         * Resize searchTextField width according to the frame width
          */
         this.addComponentListener(new ComponentListener() {
 
+            @Override
             public void componentResized(ComponentEvent e) {
-                searchTextField.setColumns( (int) (QuickFind.this.getBounds().getWidth() / 100) * 5);
+                searchTextField.setColumns((int) (QuickFind.this.getBounds().getWidth() / 100) * 5);
             }
 
+            @Override
             public void componentMoved(ComponentEvent e) {
             }
 
+            @Override
             public void componentShown(ComponentEvent e) {
             }
 
+            @Override
             public void componentHidden(ComponentEvent e) {
             }
         });
@@ -570,6 +684,7 @@ public class QuickFind extends javax.swing.JFrame {
          */
         searchTextField.addActionListener(new ActionListener() {
 
+            @Override
             public void actionPerformed(ActionEvent e) {
                 if (!isSearchDisabled) {
                     startScan();
@@ -578,7 +693,7 @@ public class QuickFind extends javax.swing.JFrame {
         });
 
         final JPanel statusBarPanel = new JPanel(new BorderLayout());
-        JPanel statusBarFlowPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        JPanel statusBarFlowPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
 
         statusToolBar = new javax.swing.JToolBar("Status", JToolBar.HORIZONTAL);
         statusLabel = new javax.swing.JLabel();
@@ -603,6 +718,7 @@ public class QuickFind extends javax.swing.JFrame {
          */
         previousRowsButton.addActionListener(new java.awt.event.ActionListener() {
 
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 previousRowsButtonActionPerformed(evt);
             }
@@ -620,6 +736,7 @@ public class QuickFind extends javax.swing.JFrame {
             /*
              * Loads next resultset into the result table
              */
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 nextRowsButtonActionPerformed(evt);
             }
@@ -640,6 +757,211 @@ public class QuickFind extends javax.swing.JFrame {
         quickFindPanel.add(resultTableScrollPane, BorderLayout.CENTER);
         quickFindPanel.add(statusToolBar, BorderLayout.SOUTH);
 
+        DefaultTableModel cacheCollectiondefaultTableModel = new DefaultTableModel();
+
+        cacheCollectionTable = new javax.swing.JTable(cacheCollectiondefaultTableModel) {
+
+            @Override
+            public void updateUI() {
+                super.updateUI();
+                TableCellRenderer r = getDefaultRenderer(Boolean.class);
+                if (r instanceof JComponent) {
+                    ((JComponent) r).updateUI();
+                }
+            }
+
+            @Override
+            public Component prepareEditor(TableCellEditor editor, int row, int column) {
+                Component c = super.prepareEditor(editor, row, column);
+                if (c instanceof JCheckBox) {
+                    JCheckBox b = (JCheckBox) c;
+                    b.setBackground(getSelectionBackground());
+                    b.setBorderPainted(true);
+                }
+                return c;
+            }
+
+            @Override
+            public boolean isCellEditable(int rowIndex, int colIndex) {
+                if (colIndex == 1) {
+                    return true;
+                }
+                return false;
+            }
+
+            @Override
+            public Class getColumnClass(int column) {
+                switch (column) {
+                    case 0:
+                        return Integer.class;
+                    case 1:
+                        return Boolean.class;
+                    default:
+                        return String.class;
+                }
+            }
+        };
+
+
+        cacheCollectionTable.setFont(PropertyPage.DEFAULT_RESULT_TABLE_FONT);
+        cacheCollectionTable.getTableHeader().setReorderingAllowed(false);
+        cacheCollectionTable.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_OFF);
+
+        cacheCollectionTable.setSelectionBackground(Color.LIGHT_GRAY);
+        cacheColletiontableRowSorter = new TableRowSorter<DefaultTableModel>(cacheCollectiondefaultTableModel);
+
+        cacheCollectionTable.setRowSorter(cacheColletiontableRowSorter);
+
+        ((DefaultTableModel) cacheCollectionTable.getModel()).addColumn("No");
+        ((DefaultTableModel) cacheCollectionTable.getModel()).addColumn(new Boolean(false));
+        ((DefaultTableModel) cacheCollectionTable.getModel()).addColumn("Cache Name");
+        ((DefaultTableModel) cacheCollectionTable.getModel()).addColumn("Included");
+        ((DefaultTableModel) cacheCollectionTable.getModel()).addColumn("Excluded");
+        ((DefaultTableModel) cacheCollectionTable.getModel()).addColumn("Items");
+        ((DefaultTableModel) cacheCollectionTable.getModel()).addColumn("Cache Size");
+        ((DefaultTableModel) cacheCollectionTable.getModel()).addColumn("Time Taken");
+        ((DefaultTableModel) cacheCollectionTable.getModel()).addColumn("Last Scanned");
+
+
+        cacheCollectionTableScrollPane = new JScrollPane(cacheCollectionTable);   //adding scrollbar to the cacheCollectionTable
+        Dimension cacheCollectionTablePreferredSize = cacheCollectionTableScrollPane.getPreferredSize();
+        cacheCollectionTableScrollPane.setPreferredSize(
+                new Dimension(cacheCollectionTablePreferredSize.width, cacheCollectionTablePreferredSize.height));
+        cacheCollectionTableScrollPane.setColumnHeader(
+                new JViewport() {
+
+                    @Override
+                    public Dimension getPreferredSize() {
+                        Dimension dimension = super.getPreferredSize();
+                        dimension.height = PropertyPage.DEFAULT_CACHEMANAGER_TABLE_HEADER_HEIGHT;
+                        return dimension;
+                    }
+                });
+
+
+        TableColumn cacheCollectionTableColumn = cacheCollectionTable.getColumnModel().getColumn(1);
+
+        cacheCollectionTableColumn.setCellEditor(cacheCollectionTable.getDefaultEditor(Boolean.class));
+        cacheCollectionTableColumn.setHeaderRenderer(
+                new CheckBoxHeader(
+                new MyItemListener()));
+
+
+
+        /*
+         * Adjusting the column widths
+         */
+        cacheCollectionTable.getColumnModel().getColumn(0).setPreferredWidth((int) (Toolkit.getDefaultToolkit().getScreenSize().getWidth() * 0.02));
+        cacheCollectionTable.getColumnModel().getColumn(1).setPreferredWidth((int) (Toolkit.getDefaultToolkit().getScreenSize().getWidth() * 0.02));
+        cacheCollectionTable.getColumnModel().getColumn(2).setPreferredWidth((int) (Toolkit.getDefaultToolkit().getScreenSize().getWidth() * 0.1));
+        cacheCollectionTable.getColumnModel().getColumn(3).setPreferredWidth((int) (Toolkit.getDefaultToolkit().getScreenSize().getWidth() * 0.2));
+        cacheCollectionTable.getColumnModel().getColumn(4).setPreferredWidth((int) (Toolkit.getDefaultToolkit().getScreenSize().getWidth() * 0.2));
+        cacheCollectionTable.getColumnModel().getColumn(5).setPreferredWidth((int) (Toolkit.getDefaultToolkit().getScreenSize().getWidth() * 0.1));
+        cacheCollectionTable.getColumnModel().getColumn(6).setPreferredWidth((int) (Toolkit.getDefaultToolkit().getScreenSize().getWidth() * 0.1));
+        cacheCollectionTable.getColumnModel().getColumn(7).setPreferredWidth((int) (Toolkit.getDefaultToolkit().getScreenSize().getWidth() * 0.1));
+        cacheCollectionTable.getColumnModel().getColumn(8).setPreferredWidth((int) (Toolkit.getDefaultToolkit().getScreenSize().getWidth() * 0.1));
+
+        cacheCollectionTable.setRowHeight(PropertyPage.DEFAULT_CACHEMANAGER_TABLE_ROW_HEIGHT);
+        cacheCollectionTable.setFont(PropertyPage.DEFAULT_CACHEMANAGER_TABLE_FONT);
+
+        newCacheButton = new javax.swing.JButton();
+        newCacheButton.setFont(PropertyPage.DEFAULT_BUTTON_FONT);
+        newCacheButton.setToolTipText("Create new cache");
+        newCacheButton.setText("New");
+
+        /*
+         * Calls new cache button action perfomed
+         */
+        newCacheButton.addActionListener(
+                new java.awt.event.ActionListener() {
+
+                    @Override
+                    public void actionPerformed(java.awt.event.ActionEvent evt) {
+                        newCacheButtonActionPerformed(evt);
+                    }
+                });
+
+        editCacheButton = new javax.swing.JButton();
+        editCacheButton.setFont(PropertyPage.DEFAULT_BUTTON_FONT);
+        editCacheButton.setToolTipText("Create new cache");
+        editCacheButton.setText("Edit");
+
+        /*
+         * Calls edit cache button action perfomed
+         */
+        editCacheButton.addActionListener(
+                new java.awt.event.ActionListener() {
+
+                    @Override
+                    public void actionPerformed(java.awt.event.ActionEvent evt) {
+                        editCacheButtonActionPerformed(evt);
+                    }
+                });
+
+        deleteCacheButton = new javax.swing.JButton();
+        deleteCacheButton.setFont(PropertyPage.DEFAULT_BUTTON_FONT);
+        deleteCacheButton.setToolTipText("Create new cache");
+        deleteCacheButton.setText("Del");
+
+        /*
+         * Calls delete cache button action perfomed
+         */
+        deleteCacheButton.addActionListener(new java.awt.event.ActionListener() {
+
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                deleteCacheButtonActionPerformed(evt);
+            }
+        });
+
+        cacheManagerCacheButton = new javax.swing.JButton();
+        cacheManagerCacheButton.setFont(PropertyPage.DEFAULT_BUTTON_FONT);
+        cacheManagerCacheButton.setToolTipText("Create new cache");
+        cacheManagerCacheButton.setText("Cache");
+
+        /*
+         * Calls cache button action perfomed
+         */
+        cacheManagerCacheButton.addActionListener(new java.awt.event.ActionListener() {
+
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cacheManagerCacheButtonActionPerformed(evt);
+            }
+        });
+
+        cacheManagerDefaultCache = new javax.swing.JCheckBox();
+        cacheManagerDefaultCache.setFont(PropertyPage.DEFAULT_BUTTON_FONT);
+        cacheManagerDefaultCache.setToolTipText("Add default cache");
+        cacheManagerDefaultCache.setText("Load Defaults");
+        cacheManagerDefaultCache.setSelected(PropertyPage.getLoadDefaults());
+
+        /*
+         * Calls load cache default action perfomed
+         */
+        cacheManagerDefaultCache.addActionListener(new java.awt.event.ActionListener() {
+
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cacheManagerDefaultCacheActionPerformed(evt);
+            }
+        });
+
+
+        cacheManagerCacheEditSubPanel.add(newCacheButton);
+        cacheManagerCacheEditSubPanel.add(editCacheButton);
+        cacheManagerCacheEditSubPanel.add(deleteCacheButton);
+        cacheManagerSubComponentsPanel.add(cacheManagerCacheEditSubPanel);
+
+        cacheManagerCacheSubPanel.add(cacheManagerCacheButton);
+        cacheManagerSubComponentsPanel.add(cacheManagerCacheSubPanel);
+
+        cacheManagerDefaultsSubPanel.add(cacheManagerDefaultCache);
+        cacheManagerSubComponentsPanel.add(cacheManagerDefaultsSubPanel);
+
+        cacheManagerPanel.add(cacheManagerSubComponentsPanel, BorderLayout.NORTH);
+        cacheManagerPanel.add(cacheCollectionTableScrollPane, BorderLayout.CENTER);
+
         openPopUpMenuItem.setText("Open");
 
         /*
@@ -647,6 +969,7 @@ public class QuickFind extends javax.swing.JFrame {
          */
         openPopUpMenuItem.addActionListener(new java.awt.event.ActionListener() {
 
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 openPopUpMenuItemActionPerformed(evt);
             }
@@ -661,6 +984,7 @@ public class QuickFind extends javax.swing.JFrame {
          */
         openLocationPopUpMenuItem.addActionListener(new java.awt.event.ActionListener() {
 
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 openLocationPopUpMenuItemActionPerformed(evt);
             }
@@ -671,12 +995,14 @@ public class QuickFind extends javax.swing.JFrame {
         renamePopUpMenuItem.setText("Rename");
         renamePopUpMenuItem.addActionListener(new java.awt.event.ActionListener() {
 
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 renamePopUpMenuItemActionPerformed(evt);
             }
         });
 
         popUpMenu.add(renamePopUpMenuItem);
+
 
         copyPathPopUpMenuItem.setText("Copy Path(s)");
 
@@ -685,6 +1011,7 @@ public class QuickFind extends javax.swing.JFrame {
          */
         copyPathPopUpMenuItem.addActionListener(new java.awt.event.ActionListener() {
 
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 copyPathPopUpMenuItemActionPerformed(evt);
             }
@@ -704,6 +1031,7 @@ public class QuickFind extends javax.swing.JFrame {
          */
         newMenuItem.addActionListener(new java.awt.event.ActionListener() {
 
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 newMenuItemActionPerformed(evt);
             }
@@ -728,6 +1056,7 @@ public class QuickFind extends javax.swing.JFrame {
          */
         exitMenuItem.addActionListener(new java.awt.event.ActionListener() {
 
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 exitMenuItemActionPerformed(evt);
             }
@@ -744,6 +1073,7 @@ public class QuickFind extends javax.swing.JFrame {
          */
         copyPathMenuItem.addActionListener(new java.awt.event.ActionListener() {
 
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 copyPathMenuItemActionPerformed(evt);
             }
@@ -759,6 +1089,7 @@ public class QuickFind extends javax.swing.JFrame {
          */
         selectAllMenuItem.addActionListener(new java.awt.event.ActionListener() {
 
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 selectAllMenuItemActionPerformed(evt);
             }
@@ -773,17 +1104,23 @@ public class QuickFind extends javax.swing.JFrame {
          * Adds action performed event to apply particular look.
          */
         for (int lookAndFeelIndex = 0; lookAndFeelIndex < lookAndFeelCollection.length; lookAndFeelIndex++) {
-            javax.swing.JMenuItem lookAndFeelMenuItem = new javax.swing.JMenuItem();
+            final javax.swing.JRadioButtonMenuItem lookAndFeelMenuItem = new javax.swing.JRadioButtonMenuItem();
+
             lookAndFeelMenuItem.setText(lookAndFeelCollection[lookAndFeelIndex].getName());
             final int selectedIndex = lookAndFeelIndex;
+            if (lookAndFeelCollection[lookAndFeelIndex].getClassName().equals(Preference.getCurrentSelectedTheme())) {
+                lookAndFeelMenuItem.setSelected(true);
+            }
 
             lookAndFeelMenuItem.addActionListener(new java.awt.event.ActionListener() {
 
+                @Override
                 public void actionPerformed(java.awt.event.ActionEvent evt) {
                     applyNewLookAndFeel(lookAndFeelCollection[selectedIndex].getClassName());
+                    lookAndFeelMenuItem.setSelected(true);
                 }
             });
-
+            themesButtonGroup.add(lookAndFeelMenuItem);
             themesMenu.add(lookAndFeelMenuItem);
         }
         mainMenuBar.add(themesMenu);
@@ -802,6 +1139,7 @@ public class QuickFind extends javax.swing.JFrame {
          */
         aboutMenuItem.addActionListener(new java.awt.event.ActionListener() {
 
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 aboutMenuItemActionPerformed(evt);
             }
@@ -810,29 +1148,214 @@ public class QuickFind extends javax.swing.JFrame {
         helpMenu.add(aboutMenuItem);
         mainMenuBar.add(helpMenu);
         setJMenuBar(mainMenuBar);
+        resultTable.setComponentPopupMenu(popUpMenu);
 
         qfTabbedPane.add("QuickFind", quickFindPanel);
-        qfTabbedPane.add("Advanced", advancedPanel);
-        //qfTabbedPane.add("CacheManager", cacheManagerPanel);
-        this.setContentPane(qfTabbedPane);
+        qfTabbedPane.add("CacheManager", cacheManagerPanel);
+        //qfTabbedPane.add("Advanced", advancedPanel);
+        quickFindMainPanel.add(qfTabbedPane, BorderLayout.CENTER);
+        quickFindMainPanel.add(statusToolBar, BorderLayout.SOUTH);
+
+        this.setContentPane(quickFindMainPanel);
         this.setLocationRelativeTo(this);
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        this.setBounds(0,0, screenSize.width/2 , screenSize.height/2);
+        this.setBounds(0, 0, screenSize.width / 2, screenSize.height / 2);
         this.setExtendedState(this.getExtendedState() | JFrame.MAXIMIZED_BOTH);
         if (SystemTray.isSupported()) {
             this.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
         }
         cacheButton.setToolTipText("Cache All/Selected root(s), if not yet done!");
+        cacheManagerCacheButton.setToolTipText("Cache All/Selected root(s), if not yet done!");
     }
 
+    /*
+     * Start cache operation as single select
+     */
     private void cacheButtonActionPerformed(java.awt.event.ActionEvent evt) {
-        startCache();
+        startCache(false);
+    }
+
+    /*
+     * Allows user to create new cache
+     */
+    private void newCacheButtonActionPerformed(java.awt.event.ActionEvent evt) {
+        QuickFindCache quickFindCache = new QuickFindCache(this, true, "New Cache");
+        int defaultCacheId = 1;
+        ArrayList<Cache> cacheList = cachedPages.getCacheList();
+        if (cacheList != null) {
+            defaultCacheId = cacheList.size()+1;
+            for (int i = 0; i < cacheList.size(); i++) {
+                Cache cache = cacheList.get(i);
+                if (cache.getuserGivenName().equalsIgnoreCase("Cache-" + defaultCacheId)) {
+                    defaultCacheId++;
+                    i = 0;    //reiterate cache list to check same cacheId exists in the list
+                }
+            }
+        }
+
+        Cache cache = quickFindCache.showDialog(defaultCacheId);
+        if (cache == null) {
+            return;
+        }
+        TableModel cacheCollectionTableModel = ((DefaultTableModel) cacheCollectionTable.getModel());
+        for (int i = 0; i < cacheCollectionTableModel.getRowCount(); i++) {
+            if (cacheCollectionTableModel.getValueAt(i, 2).toString().equalsIgnoreCase(cache.getuserGivenName())) {
+                JOptionPane.showMessageDialog(this, "Duplicate cache name, use different name");
+                return;
+            }
+        }
+        cache.setLocalCacheIndex("-1");
+        addCache(cache);
+    }
+
+    /*
+     * Adds new cache to the existing list
+     * @param   cache object which is to be added
+     */
+    private void addCache(Cache cache) {
+        cachedPages.updateCache(cache);
+        /*
+         * reload cache list
+         */
+        reLoadCacheCollectionTable();
+        cachedPages.reLoadCacheList();
+        reLoadCachedPages();
+    }
+
+    /*
+     * Refreshes the comboboxes
+     */
+    private void reLoadCachedPages() {
+        searchComboBox.removeAllItems();
+        cacheComboBox.removeAllItems();
+        cacheComboBox.addItem(PropertyPage.ALL_ROOTS);
+        searchComboBox.addItem(PropertyPage.ALL_ROOTS);
+        if (cachedPages != null && cachedPages.getCacheList() != null) {
+            for (int i = 0; i < cachedPages.getCacheList().size(); i++) {
+                cacheComboBox.addItem(((Cache) cachedPages.getCacheList().get(i)).getuserGivenName());
+                searchComboBox.addItem(((Cache) cachedPages.getCacheList().get(i)).getuserGivenName());
+            }
+        }
+    }
+
+    /*
+     * Finds out number of selected rows in the cache collection table
+     * @Return number of selected rows count
+     */
+    private int getCacheCollectionTableSelectedRowCount() {
+        int rowCount = 0;
+        TableModel cacheCollectionTableModel = ((DefaultTableModel) cacheCollectionTable.getModel());
+        for (int i = 0; i < cacheCollectionTableModel.getRowCount(); i++) {
+            if (cacheCollectionTableModel.getValueAt(i, 1).equals(Boolean.TRUE)) {
+                rowCount++;
+            }
+        }
+        return rowCount;
+    }
+
+    /*
+     * Allows user to edit existing cache
+     */
+    private void editCacheButtonActionPerformed(java.awt.event.ActionEvent evt) {
+        if (getCacheCollectionTableSelectedRowCount() > 1) {
+            JOptionPane.showMessageDialog(this, "Please select only one cache item at a time for edit");
+            return;
+        }
+        TableModel cacheCollectionTableModel = ((DefaultTableModel) cacheCollectionTable.getModel());
+        for (int i = 0; i < cacheCollectionTableModel.getRowCount(); i++) {
+            if (cacheCollectionTableModel.getValueAt(i, 1).equals(Boolean.TRUE)) {
+                Cache cache = cachedPages.getCache(cacheCollectionTableModel.getValueAt(i, 2).toString());
+                QuickFindCache nd = new QuickFindCache(this, true, "Edit Cache");
+                cache = nd.showDialog(cache);
+                if (cache == null) {
+                    return;
+                }
+                addCache(cache);
+                break;
+            }
+        }
+    }
+
+    /*
+     * Allows user to permanently delete existing cache
+     */
+    private void deleteCacheButtonActionPerformed(java.awt.event.ActionEvent evt) {
+        TableModel cacheCollectionTableModel = ((DefaultTableModel) cacheCollectionTable.getModel());
+        for (int i = 0; i < cacheCollectionTableModel.getRowCount(); i++) {
+            if (cacheCollectionTableModel.getValueAt(i, 1).equals(Boolean.TRUE)) {
+                cachedPages.removeCache(cacheCollectionTableModel.getValueAt(i, 2).toString());
+                ((DefaultTableModel) cacheCollectionTable.getModel()).removeRow(i);
+                --i;    //One item deleted
+            }
+        }
+        reLoadCacheCollectionTable();
+        reLoadCachedPages();
+    }
+
+    /*
+     * Starts caching with multi select on
+     */
+    private void cacheManagerCacheButtonActionPerformed(java.awt.event.ActionEvent evt) {
+        startCache(true);
+    }
+
+    /*
+     * Loads all root nodes from the system as default caches.
+     */
+    private void cacheManagerDefaultCacheActionPerformed(java.awt.event.ActionEvent evt) {
+        if (cacheManagerDefaultCache.isSelected()) {
+            Preference.setLoadDefaults(true);
+        } else {
+            Preference.setLoadDefaults(false);
+        }
+        PropertyPage.updateLoadDefaults();
+        File[] rootList;
+        if (PropertyPage.isLinux() || PropertyPage.isUnix()) {
+            File parentDirectory = new File("/");
+            rootList = parentDirectory.listFiles();
+        } else {
+            rootList = File.listRoots();
+        }
+        for (int i = 0; i < rootList.length; i++) {
+            if (rootList[i].isDirectory()) {
+                if (cacheManagerDefaultCache.isSelected()) {
+                    Cache cache = new Cache();
+                    cache.setuserGivenName(rootList[i].toString().replaceAll("[:\\\\/]", ""));
+                    cache.setIncludedPath(rootList[i].toString() + "|");
+                    cache.setCacheName(String.valueOf((rootList[i].toString() + "|").hashCode()));
+                    cache.setLocalCacheIndex("-1");
+                    if (!cachedPages.isCacheExists(cache.getIncludedPath(), cache.getExcludedPath())) {
+                        cachedPages.updateCache(cache);
+                    }
+                } else {
+                    TableModel cacheCollectionTableModel = ((DefaultTableModel) cacheCollectionTable.getModel());
+                    for (int j = 0; j < cacheCollectionTableModel.getRowCount(); j++) {
+                        if ((((Cache) cachedPages.getCacheList().get(j)).getIncludedPath().equals(rootList[i].toString() + "|")) && (((Cache) cachedPages.getCacheList().get(j)).getExcludedPath().equals(""))) {
+                            ((DefaultTableModel) cacheCollectionTable.getModel()).removeRow(j);
+                            cachedPages.deleteOldCacheFiles(PropertyPage.CACHE_LIST.get(j).toString());
+                            PropertyPage.CACHE_LIST.remove(j);
+                            cachedPages.getCacheList().remove(j);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        /*
+         * Only reloads cache list when null is passed
+         */
+        addCache(null);
     }
 
     /*
      * Creates cache file for each root selected
      */
-    private void startCache() {
+    private void startCache(boolean isMultiSelect) {
+        if (getCacheCollectionTableSelectedRowCount() == 0 && !isCaching && isMultiSelect) {
+            JOptionPane.showMessageDialog(this, "Please select minimum one cache item");
+            return;
+        }
         final long cacheStartTime = System.currentTimeMillis();
         QFTrayIcon.setImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource(PropertyPage.IMAGES_PATH + PropertyPage.PROCESSING_ICON)));
         final Scanner scannerInstance = new Scanner(cachedPages);
@@ -843,22 +1366,46 @@ public class QuickFind extends javax.swing.JFrame {
             PropertyPage.setFileIteratorStopper(false);
             QFTrayIcon.displayMessage("QuickFind", "Caching Started!", TrayIcon.MessageType.INFO);
             quickFindButton.setEnabled(false);
+            editCacheButton.setEnabled(false);
+            deleteCacheButton.setEnabled(false);
+            cacheManagerDefaultCache.setEnabled(false);
             isSearchDisabled = true;
             isCaching = true;
             cacheButton.setText("Stop");
-            if (cacheComboBox.getSelectedItem().toString().equals(PropertyPage.ALL_ROOTS)) {
-                scannerInstance.addCacheList(PropertyPage.CACHE_LIST);
+            cacheManagerCacheButton.setText("Stop");
 
-                /*
-                 * Cleans the cache directory before proceeding
-                 */
-                Utility.cacheCleaner(null, 1);
+            if (isMultiSelect) {
+                if ((Boolean.valueOf(cacheCollectionTable.getTableHeader().getColumnModel().getColumn(1).getHeaderValue().toString())).booleanValue()) {
+                    scannerInstance.addCacheList(PropertyPage.CACHE_LIST);
+
+                    /*
+                     * Cleans the cache directory before proceeding
+                     */
+                    Utility.cacheCleaner(null, 1);
+                } else {
+                    TableModel cacheCollectionTableModel = ((DefaultTableModel) cacheCollectionTable.getModel());
+                    for (int i = 0; i < cacheCollectionTableModel.getRowCount(); i++) {
+                        if (cacheCollectionTableModel.getValueAt(i, 1).equals(Boolean.TRUE)) {
+                            scannerInstance.addCache(PropertyPage.CACHE_LIST.get(i).toString());
+                        }
+                    }
+                }
             } else {
-                scannerInstance.addCache(PropertyPage.CACHE_LIST.get(cacheComboBox.getSelectedIndex() - 1).toString());
+                if (cacheComboBox.getSelectedItem().toString().equals(PropertyPage.ALL_ROOTS)) {
+                    scannerInstance.addCacheList(PropertyPage.CACHE_LIST);
+
+                    /*
+                     * Cleans the cache directory before proceeding
+                     */
+                    Utility.cacheCleaner(null, 1);
+                } else {
+                    scannerInstance.addCache(PropertyPage.CACHE_LIST.get(cacheComboBox.getSelectedIndex() - 1).toString());
+                }
             }
 
             scannerInstance.addPropertyChangeListener(new PropertyChangeListener() {
 
+                @Override
                 public void propertyChange(PropertyChangeEvent evt) {
                     if ("progress".equals(evt.getPropertyName())) {
                         if (isCaching) {
@@ -870,12 +1417,18 @@ public class QuickFind extends javax.swing.JFrame {
                     }
                     if ("DONE".equals(evt.getNewValue().toString())) {
                         quickFindButton.setEnabled(true);
+                        editCacheButton.setEnabled(true);
+                        deleteCacheButton.setEnabled(true);
+                        cacheManagerDefaultCache.setEnabled(true);
                         isSearchDisabled = false;
                         isCaching = false;
                         cacheButton.setText("Cache");
+                        cacheManagerCacheButton.setText("Cache");
                         statusLabel.setText(PropertyPage.getCachedFilesCount() + " Items scanned in " + (Utility.getReadableElapsedIntervalInSeconds(System.currentTimeMillis() - cacheStartTime)) + " Secs");
                         QFTrayIcon.setImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource(PropertyPage.IMAGES_PATH + PropertyPage.SYSTEM_ICON)));
                         QFTrayIcon.displayMessage("QuickFind", "Caching Over!", TrayIcon.MessageType.INFO);
+                        cachedPages.loadCacheCollection();
+                        reLoadCacheCollectionTable();
                     }
                 }
             });
@@ -916,8 +1469,13 @@ public class QuickFind extends javax.swing.JFrame {
                 public void propertyChange(PropertyChangeEvent evt) {
                     if ("DONE".equals(evt.getNewValue().toString())) {
                         cacheButton.setEnabled(true);
+                        cacheManagerCacheButton.setEnabled(true);
                         quickFindButton.setEnabled(true);
+                        editCacheButton.setEnabled(true);
+                        deleteCacheButton.setEnabled(true);
+                        cacheManagerDefaultCache.setEnabled(true);
                         cacheButton.setText("Cache");
+                        cacheManagerCacheButton.setText("Cache");
                     }
                 }
             });
@@ -986,9 +1544,11 @@ public class QuickFind extends javax.swing.JFrame {
          */
         PropertyPage.setFirstPush(true);
         PropertyPage.setCacheIteratorStopper(false);
+        PropertyPage.updateSearchResultLimit();
+        RESULT_SET_LIMIT = PropertyPage.getSearchResultLimit();
         isSearchScannerRunning = true;
         isItemFound = false;
-        clearOldSearchResultset();
+        clearOldSearchResultSetCount();
         nextRowsButton.setEnabled(false);
         previousRowsButton.setEnabled(false);
         topListIndex = 0;  //new search so set back to zero
@@ -1010,6 +1570,7 @@ public class QuickFind extends javax.swing.JFrame {
 
         search.addPropertyChangeListener(new PropertyChangeListener() {
 
+            @Override
             public void propertyChange(PropertyChangeEvent evt) {
                 if ("progress".equals(evt.getPropertyName())) {
                     if (isSearchScannerRunning) {
@@ -1031,7 +1592,7 @@ public class QuickFind extends javax.swing.JFrame {
                      * If user request for new search then clear current result
                      */
                     if (PropertyPage.getCacheIteratorStopper()) {
-                        clearOldSearchResultset();
+                        clearOldSearchResultSetCount();
                     }
                     PropertyPage.setCacheIteratorStopper(false);    // Tries to stop cache iterator
                     isSearchScannerRunning = false;
@@ -1058,7 +1619,7 @@ public class QuickFind extends javax.swing.JFrame {
     /*
      * Resets searched filescount
      */
-    private synchronized void clearOldSearchResultset() {
+    private synchronized void clearOldSearchResultSetCount() {
         PropertyPage.resetSearchedFilesCount();
     }
 
@@ -1167,6 +1728,9 @@ public class QuickFind extends javax.swing.JFrame {
                         String fileext = Utility.getFileExtension(filePath.toString());
                         if (!fileIconCache.containsKey(fileext)) {
                             Icon tmpIcon = fileSystemView.getSystemIcon(fileReference);
+                            if (tmpIcon == null) {
+                                tmpIcon = PropertyPage.defaultFileIcon;
+                            }
                             if (fileIconStringCache.containsKey(tmpIcon.toString())) {
                                 fileext = fileIconStringCache.get(tmpIcon.toString());
                             } else {
@@ -1270,30 +1834,19 @@ public class QuickFind extends javax.swing.JFrame {
      */
     private void openLocationPopUpMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
         try {
-            String selectedPath = ((IconAndText) resultTable.getModel().getValueAt(resultTable.getSelectedRow(), 0)).getFilePath();
+            String selectedPath = ((IconAndText) resultTable.getModel().getValueAt(resultTable.convertRowIndexToModel(resultTable.getSelectedRow()), 0)).getFilePath();
             File selectedFile = new File(selectedPath);
-            if (selectedFile.exists() && selectedFile.canRead()) {
-                if (selectedFile.isDirectory()) {
-                    if (Desktop.isDesktopSupported()) {
-                        Desktop.getDesktop().open(selectedFile);
-                    }
-                } else if (selectedFile.isFile()) {
-                    File selectedFileDirectory = new File(selectedPath.substring(0, selectedPath.lastIndexOf(PropertyPage.FILE_SEPARATOR)));
-                    if (Desktop.isDesktopSupported()) {
-                        Desktop.getDesktop().open(selectedFileDirectory);
-                    }
-                } else {
-                    JOptionPane.showMessageDialog(rootPane, "Cannot Open!");
-                }
+            if (selectedFile.isDirectory()) {
+                openDirectory(selectedPath);
+            } else if (selectedFile.isFile()) {
+                //Take out file directory
+                openDirectory(selectedPath.substring(0, selectedPath.lastIndexOf(PropertyPage.FILE_SEPARATOR)));
             } else {
-                JOptionPane.showMessageDialog(this, "Could not open  this File/Directory Location", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(rootPane, "Cannot Open!", "Invalid File", JOptionPane.ERROR_MESSAGE);
             }
         } catch (SecurityException securityException) {
             LOGGER.log(Level.SEVERE, "Insufficient permission", securityException);
             JOptionPane.showMessageDialog(QuickFind.this, "Could not open  this File/Directory Location", "Insufficient File Permission", JOptionPane.ERROR_MESSAGE);
-        } catch (IOException iOException) {
-            LOGGER.log(Level.SEVERE, "An IO error occured", iOException);
-            JOptionPane.showMessageDialog(QuickFind.this, "Could not open  this File/Directory Location", "Interrupted", JOptionPane.ERROR_MESSAGE);
         } catch (Exception unknownException) {
             LOGGER.log(Level.SEVERE, "Unknown Error", unknownException);
             JOptionPane.showMessageDialog(QuickFind.this, "Unknown Error", "Error", JOptionPane.ERROR_MESSAGE);
@@ -1304,34 +1857,8 @@ public class QuickFind extends javax.swing.JFrame {
      * Executes the selected File
      */
     private void openPopUpMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
-        try {
-            String selectedPath = ((IconAndText) resultTable.getModel().getValueAt(resultTable.getSelectedRow(), 0)).getFilePath();
-            File selectedFile = new File(selectedPath);
-            if (selectedFile.exists()) {
-                if (selectedFile.canExecute() && selectedFile.canRead() && selectedFile.isFile()) {
-                    if (PropertyPage.isWindows()) {
-                        Runtime.getRuntime().exec("rundll32 SHELL32.DLL,ShellExec_RunDLL " + selectedPath);
-                    } else {
-                        if (Desktop.isDesktopSupported()) {
-                            Desktop.getDesktop().open(selectedFile);
-                        }
-                    }
-                } else {
-                    JOptionPane.showMessageDialog(this, "You don't have enough permission to open this File", "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            } else {
-                JOptionPane.showMessageDialog(this, "Could not open this File", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        } catch (SecurityException securityException) {
-            LOGGER.log(Level.SEVERE, "Insufficient permission", securityException);
-            JOptionPane.showMessageDialog(QuickFind.this, "Could not open  this File", "Insufficient File Permission", JOptionPane.ERROR_MESSAGE);
-        } catch (IOException iOException) {
-            LOGGER.log(Level.SEVERE, "An IO error occured", iOException);
-            JOptionPane.showMessageDialog(QuickFind.this, "Could not open  this File", "Interrupted", JOptionPane.ERROR_MESSAGE);
-        } catch (Exception unknownException) {
-            LOGGER.log(Level.SEVERE, "Unknown Error", unknownException);
-            JOptionPane.showMessageDialog(QuickFind.this, "Unknown Error", "Error", JOptionPane.ERROR_MESSAGE);
-        }
+        String selectedPath = ((IconAndText) resultTable.getModel().getValueAt(resultTable.convertRowIndexToModel(resultTable.getSelectedRow()), 0)).getFilePath();
+        openFile(selectedPath);
     }
 
     /*
@@ -1339,7 +1866,7 @@ public class QuickFind extends javax.swing.JFrame {
      */
     private void renamePopUpMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
         try {
-            String selectedPath = ((IconAndText) resultTable.getModel().getValueAt(resultTable.getSelectedRow(), 0)).getFilePath();
+            String selectedPath = ((IconAndText) resultTable.getModel().getValueAt(resultTable.convertRowIndexToModel(resultTable.getSelectedRow()), 0)).getFilePath();
             String userInput = "";
             File selectedFile = new File(selectedPath);
             if (selectedFile.exists()) {
@@ -1367,7 +1894,7 @@ public class QuickFind extends javax.swing.JFrame {
      * Resets the old search result
      */
     private void newMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
-        clearOldSearchResultset();
+        clearOldSearchResultSetCount();
         setStatusMessage(PropertyPage.getSearchedFilesCount() + " Items found.");
         clearResultTable();
         resultSetIndexLabel.setText("0-0");
@@ -1429,33 +1956,18 @@ public class QuickFind extends javax.swing.JFrame {
         if (evt.getClickCount() == 2 && !evt.isConsumed()) {
             evt.consume();
             try {
-                String selectedPath = ((IconAndText) resultTable.getModel().getValueAt(resultTable.getSelectedRow(), 0)).getFilePath();
+                String selectedPath = ((IconAndText) resultTable.getModel().getValueAt(resultTable.convertRowIndexToModel(resultTable.getSelectedRow()), 0)).getFilePath();
                 File selectedFile = new File(selectedPath);
-                if (selectedFile.exists()) {
-                    if (!selectedFile.canExecute() || !selectedFile.canRead()) {
-                        JOptionPane.showMessageDialog(rootPane, "You Don't have enough permission to open this File");
-                        return;
-                    }
-                    if (selectedFile.isDirectory()) {
-                        if (Desktop.isDesktopSupported()) {
-                            Desktop.getDesktop().open(selectedFile);
-                        }
-                    } else if (selectedFile.isFile()) {
-                        if (PropertyPage.isWindows()) {
-                            Runtime.getRuntime().exec("rundll32 SHELL32.DLL,ShellExec_RunDLL " + selectedPath);
-                        } else if (Desktop.isDesktopSupported()) {
-                            Desktop.getDesktop().open(selectedFile);
-                        }
-                    }
+                if (selectedFile.isDirectory()) {
+                    openDirectory(selectedPath);
+                } else if (selectedFile.isFile()) {
+                    openFile(selectedPath);
                 } else {
-                    JOptionPane.showMessageDialog(this, "Could not open this File", "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(rootPane, "Cannot Open!");
                 }
             } catch (SecurityException securityException) {
                 LOGGER.log(Level.SEVERE, "Insufficient permission", securityException);
                 JOptionPane.showMessageDialog(QuickFind.this, "Could not open  this File/Directory Location", "Insufficient File Permission", JOptionPane.ERROR_MESSAGE);
-            } catch (IOException iOException) {
-                LOGGER.log(Level.SEVERE, "An IO error occured", iOException);
-                JOptionPane.showMessageDialog(QuickFind.this, "Could not open  this File/Directory Location", "Interrupted", JOptionPane.ERROR_MESSAGE);
             } catch (Exception unknownException) {
                 LOGGER.log(Level.SEVERE, "Unknown Error", unknownException);
                 JOptionPane.showMessageDialog(QuickFind.this, "Unknown Error", "Error", JOptionPane.ERROR_MESSAGE);
@@ -1481,7 +1993,7 @@ public class QuickFind extends javax.swing.JFrame {
                 if (filePath.length() > 0) {
                     filePath.append("\n");
                 }
-                filePath.append(((IconAndText) resultTable.getModel().getValueAt(selectedRowsIndices[i], 0)).getFilePath());
+                filePath.append(((IconAndText) resultTable.getModel().getValueAt(resultTable.convertRowIndexToModel(selectedRowsIndices[i]), 0)).getFilePath());
             }
             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(filePath.toString()), null);
             filePath = null;
@@ -1506,13 +2018,31 @@ public class QuickFind extends javax.swing.JFrame {
         cacheComboBox.addItem(PropertyPage.ALL_ROOTS);
         searchComboBox.addItem(PropertyPage.ALL_ROOTS);
         for (int i = 0; i < PropertyPage.CACHE_LIST.size(); i++) {
-            cacheComboBox.addItem(PropertyPage.CACHE_LIST.get(i));
-            searchComboBox.addItem(PropertyPage.CACHE_LIST.get(i));
+            cacheComboBox.addItem(cachedPages.getUserGivenName(PropertyPage.CACHE_LIST.get(i).toString()));
+            searchComboBox.addItem(cachedPages.getUserGivenName(PropertyPage.CACHE_LIST.get(i).toString()));
         }
+
+        reLoadCacheCollectionTable();
 
         this.setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource(PropertyPage.IMAGES_PATH + PropertyPage.SYSTEM_ICON)));
         nextRowsButton.setEnabled(false);
         previousRowsButton.setEnabled(false);
+
+        qfTabbedPane.addChangeListener(new ChangeListener() {
+
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                reShuffleMenuBar(qfTabbedPane.getSelectedIndex());
+            }
+        });
+
+        qfTabbedPane.addFocusListener(new FocusAdapter() {
+
+            @Override
+            public void focusGained(FocusEvent e) {
+                searchTextField.requestFocusInWindow();
+            }
+        });
 
         this.addWindowFocusListener(new WindowAdapter() {
 
@@ -1522,18 +2052,92 @@ public class QuickFind extends javax.swing.JFrame {
             }
         });
 
-        resultTable.addMouseListener(new MouseAdapter() {
+        resultTable.addKeyListener(new KeyListener() {
 
             @Override
-            public void mouseReleased(MouseEvent e) {
-                triggerPopUpMenu(e);
+            public void keyTyped(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    e.consume();
+                }
             }
 
             @Override
-            public void mousePressed(MouseEvent e) {
-                triggerPopUpMenu(e);
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    String selectedPath = ((IconAndText) resultTable.getModel().getValueAt(resultTable.convertRowIndexToModel(resultTable.getSelectedRow()), 0)).getFilePath();
+                    if (selectedPath != null) {
+                        File selectedFile = new File(selectedPath);
+                        if (selectedFile.exists()) {
+                            if (selectedFile.isDirectory()) {
+                                openLocationPopUpMenuItemActionPerformed(null);
+                            } else {
+                                openPopUpMenuItemActionPerformed(null);
+                            }
+                        }
+                    }
+                    e.consume();
+                }
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    e.consume();
+                }
             }
         });
+        if (PropertyPage.getLoadDefaults() && cachedPages.getCacheList().isEmpty()) {
+            /*
+             * Loads the default cache items in case of missing cache list
+             */
+            cacheManagerDefaultCacheActionPerformed(null);
+        }
+    }
+
+    void reShuffleMenuBar(int selectedTabIndex) {
+        switch (selectedTabIndex) {
+            case 0: //QuickFind Tab
+                copyPathMenuItem.setEnabled(true);
+                break;
+            case 1: //Cache Manager Tab
+                copyPathMenuItem.setEnabled(false);
+                break;
+        }
+    }
+
+    /*
+     * Loads cache collection table from cache list
+     */
+    void reLoadCacheCollectionTable() {
+        Object cacheCollection[] = new Object[9];
+
+        DefaultTableModel defaultTableModel = (DefaultTableModel) cacheCollectionTable.getModel();
+        int tableRowCount = defaultTableModel.getRowCount();
+        for (int i = tableRowCount - 1; i >= 0; i--) {
+            defaultTableModel.removeRow(i);
+        }
+
+        if (cachedPages != null) {
+            if (cachedPages.getCacheList() != null) {
+                for (int i = 0; i < cachedPages.getCacheList().size(); i++) {
+                    Cache cache = (Cache) cachedPages.getCacheList().get(i);
+                    cacheCollection[0] = i + 1;
+                    cacheCollection[1] = false;
+                    cacheCollection[2] = cache.getuserGivenName();
+                    cacheCollection[3] = cache.getIncludedPath();
+                    cacheCollection[4] = cache.getExcludedPath();
+                    cacheCollection[5] = cache.getTotalItemsScanned();
+                    cacheCollection[6] = cache.getCacheFileSize();
+                    cacheCollection[7] = cache.getTimeTakenToCache();
+                    if (cache.getStartTimeStamp() == null || cache.getStartTimeStamp().isEmpty()) {
+                        cacheCollection[8] = "NA";
+                    } else {
+                        cacheCollection[8] = Utility.getDateTimeFormat(PropertyPage.DEFAULT_DATETIME_FORMAT, Long.valueOf(cache.getStartTimeStamp()));
+                    }
+                    ((DefaultTableModel) cacheCollectionTable.getModel()).addRow(cacheCollection);
+                }
+            }
+        }
     }
 
     /*
@@ -1549,6 +2153,120 @@ public class QuickFind extends javax.swing.JFrame {
                 source.changeSelection(row, column, false, false);
             }
             popUpMenu.show(e.getComponent(), e.getX(), e.getY());
+        }
+    }
+
+    /*
+     * Opens the given directory depending on the operating system
+     * @param   Absolute directory path
+     */
+    private void openDirectory(final String directoryPath) {
+        try {
+            File selectedFile = new File(directoryPath);
+            if (selectedFile.exists() && selectedFile.canRead()) {
+                if (PropertyPage.isLinux() || PropertyPage.isUnix()) {
+                    boolean notSupported = false;
+                    try {
+                        Runtime.getRuntime().exec("xdg-open " + selectedFile);
+                    } catch (Exception unknownException) {
+                        LOGGER.log(Level.WARNING, "Unknown Error", unknownException);
+                        notSupported = true;
+                    }
+                    if (notSupported) {
+                        try {
+                            Runtime.getRuntime().exec("gnome-open " + selectedFile);
+                        } catch (Exception unknownException) {
+                            LOGGER.log(Level.WARNING, "Unknown Error", unknownException);
+                            notSupported = true;
+                        }
+                    }
+                    if (Desktop.isDesktopSupported() && notSupported) {
+                        Desktop.getDesktop().open(selectedFile);
+                    }
+                }
+                if (Desktop.isDesktopSupported() && PropertyPage.isWindows()) {
+                    Desktop.getDesktop().open(selectedFile);
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Could not open  this File/Directory Location", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (SecurityException securityException) {
+            LOGGER.log(Level.SEVERE, "Insufficient permission", securityException);
+            JOptionPane.showMessageDialog(QuickFind.this, "Could not open  this File/Directory Location", "Insufficient File Permission", JOptionPane.ERROR_MESSAGE);
+        } catch (IOException iOException) {
+            LOGGER.log(Level.SEVERE, "An IO error occured", iOException);
+            JOptionPane.showMessageDialog(QuickFind.this, "Could not open  this File/Directory Location", "Interrupted", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception unknownException) {
+            LOGGER.log(Level.SEVERE, "Unknown Error", unknownException);
+            JOptionPane.showMessageDialog(QuickFind.this, "Unknown Error", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /*
+     * Opens the given file depending on the operating system
+     * @param   Absolute file path
+     */
+    private void openFile(final String filePath) {
+        try {
+            File selectedFile = new File(filePath);
+            if (selectedFile.exists()) {
+                if (selectedFile.canRead() && selectedFile.isFile()) {
+                    if (PropertyPage.isLinux() || PropertyPage.isUnix()) {
+                        boolean notSupported = false;
+                        try {
+                            Runtime.getRuntime().exec("xdg-open " + selectedFile);
+                        } catch (Exception unknownException) {
+                            LOGGER.log(Level.WARNING, "Unknown Error", unknownException);
+                            notSupported = true;
+                        }
+                        if (notSupported) {
+                            try {
+                                Runtime.getRuntime().exec("gnome-open " + selectedFile);
+                            } catch (Exception unknownException) {
+                                LOGGER.log(Level.WARNING, "Unknown Error", unknownException);
+                                notSupported = true;
+                            }
+                        } else if (Desktop.isDesktopSupported() && notSupported) {
+                            Desktop.getDesktop().open(selectedFile);
+                        }
+                    }
+
+                    if (PropertyPage.isWindows()) {
+                        Runtime.getRuntime().exec("rundll32 SHELL32.DLL,ShellExec_RunDLL " + filePath);
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(this, "You don't have enough permission to open this File", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Could not open this File", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (SecurityException securityException) {
+            LOGGER.log(Level.SEVERE, "Insufficient permission", securityException);
+            JOptionPane.showMessageDialog(QuickFind.this, "Could not open  this File", "Insufficient File Permission", JOptionPane.ERROR_MESSAGE);
+        } catch (IOException iOException) {
+            LOGGER.log(Level.SEVERE, "An IO error occured", iOException);
+            JOptionPane.showMessageDialog(QuickFind.this, "Could not open  this File", "Interrupted", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception unknownException) {
+            LOGGER.log(Level.SEVERE, "Unknown Error", unknownException);
+            JOptionPane.showMessageDialog(QuickFind.this, "Unknown Error", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /*
+     * Item listener for cache collection table
+     */
+    class MyItemListener implements ItemListener {
+
+        @Override
+        public void itemStateChanged(ItemEvent e) {
+            Object source = e.getSource();
+            if (source instanceof AbstractButton == false) {
+                return;
+            }
+            boolean checked = e.getStateChange() == ItemEvent.SELECTED;
+            for (int x = 0, y = cacheCollectionTable.getRowCount(); x < y; x++) {
+                cacheCollectionTable.setValueAt(new Boolean(checked), x, 1);
+            }
         }
     }
 }
@@ -1619,6 +2337,7 @@ class DeletedFileIcon implements Icon {
     private int height = 16;
     private BasicStroke basicStroke = new BasicStroke(4);
 
+    @Override
     public void paintIcon(Component c, Graphics g, int x, int y) {
         Graphics2D graphics2d = (Graphics2D) g.create();
 
@@ -1633,11 +2352,138 @@ class DeletedFileIcon implements Icon {
         graphics2d = null;
     }
 
+    @Override
     public int getIconWidth() {
         return width;
     }
 
+    @Override
     public int getIconHeight() {
         return height;
+    }
+}
+
+/*
+ * Implements checkbox component in the cache collection table header
+ */
+class CheckBoxHeader extends JCheckBox
+        implements TableCellRenderer, MouseListener {
+
+    protected CheckBoxHeader rendererComponent;
+    protected int column;
+    protected boolean mousePressed = false;
+    private final JLabel label = new JLabel("");
+
+    public CheckBoxHeader(ItemListener itemListener) {
+        super((String) null);
+        rendererComponent = this;
+        rendererComponent.addItemListener(itemListener);
+        rendererComponent.setHorizontalAlignment(JCheckBox.CENTER);
+        setOpaque(false);
+    }
+
+    @Override
+    public Component getTableCellRendererComponent(
+            JTable table, Object value,
+            boolean isSelected, boolean hasFocus, int row, int column) {
+
+        TableCellRenderer r = table.getTableHeader().getDefaultRenderer();
+        JLabel jLabel = (JLabel) r.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        if (table != null) {
+            JTableHeader header = table.getTableHeader();
+            rendererComponent.setForeground(header.getForeground());
+            rendererComponent.setBackground(header.getBackground());
+            rendererComponent.setFont(header.getFont());
+            header.addMouseListener(rendererComponent);
+        }
+        setColumn(column);
+        rendererComponent.setText("");
+        setBorder(UIManager.getBorder("TableHeader.cellBorder"));
+        label.setIcon(new ComponentIcon(this));
+        jLabel.addMouseListener(rendererComponent);
+        jLabel.setIcon(new ComponentIcon(label));
+        jLabel.setHorizontalAlignment(JCheckBox.CENTER);
+        jLabel.setText(null);
+        return jLabel;
+    }
+
+    @Override
+    public void updateUI() {
+        setText(null);
+        super.updateUI();
+    }
+
+    protected void setColumn(int column) {
+        this.column = column;
+    }
+
+    public int getColumn() {
+        return column;
+    }
+
+    protected void handleClickEvent(MouseEvent e) {
+        if (mousePressed) {
+            mousePressed = false;
+            JTableHeader header = (JTableHeader) (e.getSource());
+            JTable tableView = header.getTable();
+            TableColumnModel columnModel = tableView.getColumnModel();
+            int viewColumn = columnModel.getColumnIndexAtX(e.getX());
+            int modelColumn = tableView.convertColumnIndexToModel(viewColumn);
+
+            if (viewColumn == this.column && e.getClickCount() == 1 && modelColumn != -1) {
+                doClick();
+            }
+        }
+    }
+
+    @Override
+    public void mouseClicked(MouseEvent e) {
+        handleClickEvent(e);
+        ((JTableHeader) e.getSource()).repaint();
+
+    }
+
+    @Override
+    public void mousePressed(MouseEvent e) {
+        mousePressed = true;
+    }
+
+    @Override
+    public void mouseReleased(MouseEvent e) {
+    }
+
+    @Override
+    public void mouseEntered(MouseEvent e) {
+    }
+
+    @Override
+    public void mouseExited(MouseEvent e) {
+    }
+}
+
+/*
+ * Used to paint default look and feel of the table header
+ */
+class ComponentIcon implements Icon {
+
+    private final JComponent cmp;
+
+    public ComponentIcon(JComponent cmp) {
+        this.cmp = cmp;
+    }
+
+    @Override
+    public int getIconWidth() {
+        return cmp.getPreferredSize().width;
+    }
+
+    @Override
+    public int getIconHeight() {
+        return cmp.getPreferredSize().height;
+    }
+
+    @Override
+    public void paintIcon(Component c, Graphics g, int x, int y) {
+        SwingUtilities.paintComponent(g, cmp, (Container) c, x, y, getIconWidth(), getIconHeight());
     }
 }
