@@ -35,6 +35,7 @@ package net.quickfind.gui;
 
 import java.awt.Color;
 import java.awt.Desktop;
+import java.awt.Toolkit;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.logging.Level;
@@ -57,13 +58,14 @@ public class QuickFindSplash extends javax.swing.JFrame {
      */
     public QuickFindSplash() {
         setUndecorated(true);
+        this.setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource(PropertyPage.IMAGES_PATH + PropertyPage.SYSTEM_ICON)));
         initComponents();
         pack();
         this.setLocationRelativeTo(this);
         productNameLabel.grabFocus();
         productVersionValueLabel.setText(PropertyPage.PRODUCT_VERSION);
         homePageValueLabel.setText(PropertyPage.WEBSITE);
-        mainPanel.setBackground(Color.LIGHT_GRAY);
+        mainPanel.setBackground(Color.WHITE);
     }
 
     @SuppressWarnings("unchecked")
@@ -79,6 +81,7 @@ public class QuickFindSplash extends javax.swing.JFrame {
         homePageValueLabel = new javax.swing.JLabel();
         loadingLabel = new javax.swing.JLabel();
         splashUnderlineLabel = new javax.swing.JLabel();
+        jLabel1 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("QuickFind");
@@ -86,16 +89,18 @@ public class QuickFindSplash extends javax.swing.JFrame {
         setForeground(java.awt.Color.white);
         setResizable(false);
 
-        mainPanel.setBackground(new java.awt.Color(204, 204, 204));
-        mainPanel.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+        mainPanel.setBackground(java.awt.Color.white);
+        mainPanel.setBorder(javax.swing.BorderFactory.createTitledBorder(""));
 
         spashImageLabel.setIcon(new javax.swing.ImageIcon(getClass().getResource(PropertyPage.IMAGES_PATH + PropertyPage.SPLASH_ICON)));
 
-        productVersionLabel.setFont(new java.awt.Font("Tahoma", 1, 11));
+        productVersionLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         productVersionLabel.setText("Product Version:");
 
-        productNameLabel.setFont(new java.awt.Font("Times New Roman", 1, 18));
+        productNameLabel.setFont(new java.awt.Font("Times New Roman", 1, 24)); // NOI18N
+        productNameLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         productNameLabel.setText("QuickFind");
+        productNameLabel.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
 
         productVersionValueLabel.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
         productVersionValueLabel.setText("<html> \n<font size='4'>1.0.0.1</font>\n<font size='2'>BETA</font>\n</html>");
@@ -117,31 +122,32 @@ public class QuickFindSplash extends javax.swing.JFrame {
 
         splashUnderlineLabel.setText("______________________________________");
 
+        jLabel1.setFont(new java.awt.Font("Arial Rounded MT Bold", 0, 11)); // NOI18N
+        jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel1.setText("Instant File Search");
+        jLabel1.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+
         javax.swing.GroupLayout mainPanelLayout = new javax.swing.GroupLayout(mainPanel);
         mainPanel.setLayout(mainPanelLayout);
         mainPanelLayout.setHorizontalGroup(
             mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(mainPanelLayout.createSequentialGroup()
+                .addGroup(mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(splashUnderlineLabel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(spashImageLabel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(productNameLabel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGap(46, 46, 46)
                 .addGroup(mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(mainPanelLayout.createSequentialGroup()
-                        .addGap(274, 274, 274)
-                        .addGroup(mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(productVersionLabel)
-                            .addComponent(homePageLabel))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addGroup(mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(productVersionValueLabel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGroup(mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                .addComponent(loadingLabel)
-                                .addComponent(homePageValueLabel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                    .addComponent(spashImageLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 248, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(mainPanelLayout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(splashUnderlineLabel))
-                    .addGroup(mainPanelLayout.createSequentialGroup()
-                        .addGap(73, 73, 73)
-                        .addComponent(productNameLabel)))
-                .addContainerGap(19, Short.MAX_VALUE))
+                    .addComponent(productVersionLabel)
+                    .addComponent(homePageLabel))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(productVersionValueLabel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                        .addComponent(loadingLabel)
+                        .addComponent(homePageValueLabel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap())
         );
         mainPanelLayout.setVerticalGroup(
             mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -156,14 +162,15 @@ public class QuickFindSplash extends javax.swing.JFrame {
                         .addGroup(mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(homePageLabel)
                             .addComponent(homePageValueLabel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addComponent(spashImageLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 145, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(5, 5, 5)
+                    .addComponent(spashImageLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 144, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(splashUnderlineLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(productNameLabel)
-                    .addComponent(loadingLabel))
-                .addContainerGap())
+                    .addComponent(loadingLabel)
+                    .addComponent(productNameLabel))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jLabel1))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -190,13 +197,13 @@ public class QuickFindSplash extends javax.swing.JFrame {
         } catch (URISyntaxException URISyntaxEx) {
             LOGGER.log(Level.SEVERE, "Invalid URI passed", URISyntaxEx);
         } catch (IOException iOException) {
-            LOGGER.log(Level.SEVERE, "Browser failed to lauch", iOException);
+            LOGGER.log(Level.SEVERE, "Browser failed to launch", iOException);
         }
     }//GEN-LAST:event_homePageValueLabelMouseClicked
-
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel homePageLabel;
     private javax.swing.JLabel homePageValueLabel;
+    private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel loadingLabel;
     private javax.swing.JPanel mainPanel;
     private javax.swing.JLabel productNameLabel;
